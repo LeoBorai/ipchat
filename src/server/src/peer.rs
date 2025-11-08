@@ -8,10 +8,25 @@ use tokio::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 
-use crate::chat::{PeerInfo, Room, ServerMessage};
+use crate::chat::{Room, ServerMessage};
 use crate::discovery::DiscoveryService;
 
 pub type SharedPeer = Arc<RwLock<Peer>>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerRoom {
+    pub id: Uuid,
+    pub ip: IpAddr,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerInfo {
+    pub ip: IpAddr,
+    pub username: String,
+    pub rooms: Vec<PeerRoom>,
+    // pub last_seen: std::time::Instant,
+}
 
 pub struct Peer {
     pub username: String,
@@ -19,13 +34,6 @@ pub struct Peer {
     pub connections: HashMap<SocketAddr, UnboundedSender<ServerMessage>>,
     pub rooms: HashMap<Uuid, Room>,
     pub discovered_peers: HashMap<IpAddr, PeerInfo>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PeerRoom {
-    pub id: Uuid,
-    pub ip: IpAddr,
-    pub name: String,
 }
 
 impl Peer {

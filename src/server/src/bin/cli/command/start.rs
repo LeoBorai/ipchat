@@ -4,9 +4,9 @@ use anyhow::Result;
 use clap::Parser;
 use tracing::info;
 
-use ipchat::chat::ChatService;
 use ipchat::discovery::DiscoveryService;
 use ipchat::peer::Peer;
+use ipchat::ws::WebSocket;
 
 #[derive(Clone, Debug, Parser)]
 pub struct StartCmd {
@@ -24,10 +24,10 @@ impl StartCmd {
         discovery.start_beacon(Arc::clone(&peer)).await?;
         discovery.start_listener(Arc::clone(&peer)).await?;
 
-        info!("Discovery service running. Press Ctrl+C to stop.\n");
+        info!("Discovery service running. Press Ctrl+C to stop.");
 
-        let chat = ChatService::new(Arc::clone(&peer));
-        chat.start("0.0.0.0:8080").await?;
+        let ws = WebSocket::new(Arc::clone(&peer));
+        ws.start().await?;
 
         tokio::signal::ctrl_c().await?;
         info!("Shutting down...");

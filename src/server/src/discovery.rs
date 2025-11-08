@@ -8,8 +8,7 @@ use tokio::net::UdpSocket;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
-use crate::chat::PeerInfo;
-use crate::peer::SharedPeer;
+use crate::peer::{PeerInfo, SharedPeer};
 
 const BROADCAST_INTERVAL_SECS: u64 = 5;
 const DISCOVERY_PORT: u16 = 9001;
