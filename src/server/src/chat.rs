@@ -31,6 +31,7 @@ pub enum ClientMessage {
     CreateRoom { name: String },
     JoinRoom { room_id: Uuid, peer_ip: IpAddr },
     LeaveRoom { room_id: Uuid },
+    Register { username: String },
     SendMessage { room_id: Uuid, content: String },
     ListPeers,
     ListRooms,

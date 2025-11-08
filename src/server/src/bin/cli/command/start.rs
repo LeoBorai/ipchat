@@ -5,7 +5,9 @@ use clap::Parser;
 use tracing::info;
 
 use ipchat::discovery::DiscoveryService;
+use ipchat::domain::Services;
 use ipchat::peer::Peer;
+use ipchat::setup::Setup;
 use ipchat::ws::WebSocket;
 
 #[derive(Clone, Debug, Parser)]
@@ -17,6 +19,8 @@ pub struct StartCmd {
 
 impl StartCmd {
     pub async fn exec(&self) -> Result<()> {
+        let setup = Setup::new().await?;
+        let services = Services::new(setup.clone());
         let discovery = DiscoveryService::new().await?;
         let peer = Peer::new(self.username.clone())?;
         let peer = peer.shared();
