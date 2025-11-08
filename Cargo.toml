@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "src/server",
+]
+
+default-members = [
+    "src/server"
+]

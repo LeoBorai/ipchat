@@ -1,0 +1,26 @@
+[package]
+name = "ipchat"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "ipchat"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ipchat"
+path = "src/bin/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+futures-util = "0.3"
+if-addrs = "0.14.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+socket2 = "0.6.1"
+tokio = { version = "1.47", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-tungstenite = "0.28.0"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = "0.1.41"
+uuid = { version = "1.18", features = ["serde", "v4"] }
