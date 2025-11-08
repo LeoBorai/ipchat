@@ -1,10 +1,10 @@
-use std::sync::Arc;
+mod cli;
 
 use anyhow::Result;
+use clap::Parser;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-use ipchat::peer::Peer;
-use ipchat::{chat::ChatService, discovery::DiscoveryService};
+use self::cli::Cli;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,20 +15,8 @@ async fn main() -> Result<()> {
         .with(filter_layer)
         .init();
 
-    let discovery = DiscoveryService::new().await?;
-    let peer = Peer::new(String::from("Leo"))?;
-    let peer = peer.shared();
-
-    discovery.start_beacon(Arc::clone(&peer)).await?;
-    discovery.start_listener(Arc::clone(&peer)).await?;
-
-    println!("Discovery service running. Press Ctrl+C to stop.\n");
-
-    let chat = ChatService::new(Arc::clone(&peer));
-    chat.start("0.0.0.0:8080").await?;
-
-    tokio::signal::ctrl_c().await?;
-    println!("\nShutting down...");
+    let cli = Cli::parse();
+    cli.run().await?;
 
     Ok(())
 }
