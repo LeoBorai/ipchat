@@ -8,7 +8,8 @@ use tokio::net::UdpSocket;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
-use crate::peer::PeerInfo;
+use crate::chat::PeerInfo;
+use crate::peer::SharedPeer;
 
 const BROADCAST_INTERVAL_SECS: u64 = 5;
 const DISCOVERY_PORT: u16 = 9001;
@@ -44,9 +45,10 @@ impl DiscoveryService {
 
     /// Creates and starts the beacon task that periodically broadcasts
     /// the client's presence to the local network.
-    pub async fn start_beacon(&self, peer: &PeerInfo) -> Result<()> {
+    pub async fn start_beacon(&self, peer: SharedPeer) -> Result<()> {
         let broadcast_ip = self.broadcast_ip;
         let socket = Self::create_broadcast_socket()?;
+        let peer = peer.read().await;
         let message = DiscoveryMessage {
             username: peer.username.clone(),
             ip: self.local_ip,
@@ -78,7 +80,7 @@ impl DiscoveryService {
         Ok(())
     }
 
-    pub async fn start_listener(&self) -> Result<()> {
+    pub async fn start_listener(&self, peer: SharedPeer) -> Result<()> {
         let socket = Self::create_broadcast_socket()?;
         let broadcast_ip = self.broadcast_ip;
         let local_ip = self.local_ip;
@@ -99,6 +101,11 @@ impl DiscoveryService {
                         if let Ok(msg_str) = std::str::from_utf8(&buf[..len])
                             && let Ok(disc_msg) = serde_json::from_str::<DiscoveryMessage>(msg_str)
                         {
+                            peer.write().await.add_peer(PeerInfo {
+                                ip: disc_msg.ip.into(),
+                                username: disc_msg.username.clone(),
+                                rooms: vec![],
+                            });
                             info!(%addr, username=disc_msg.username, "Discovered peer");
                         }
                     }
