@@ -17,23 +17,30 @@ use crate::peer::{PeerInfo, SharedPeer};
 
 /// Service in charge of handling WebSocket connections for real-time chat communication
 pub struct WebSocket {
+    addr: SocketAddr,
     peer: SharedPeer,
+    tcp_listener: Arc<TcpListener>,
 }
 
 impl WebSocket {
-    pub fn new(peer: SharedPeer) -> Self {
-        Self { peer }
+    pub async fn new(peer: SharedPeer) -> Result<Self> {
+        let tcp_listener = TcpListener::bind("0.0.0.0:0").await?;
+        let tcp_listener = Arc::new(tcp_listener);
+        let addr = tcp_listener.local_addr()?;
+
+        Ok(Self {
+            peer,
+            addr,
+            tcp_listener,
+        })
     }
 
     pub async fn start(&self) -> Result<()> {
-        let listener = TcpListener::bind("0.0.0.0:0").await?;
-        let local_addr = listener.local_addr()?;
         let peer = self.peer.clone();
-
-        info!(%local_addr, "Listening");
+        let tcp_listener = Arc::clone(&self.tcp_listener);
 
         tokio::spawn(async move {
-            while let Ok((stream, addr)) = listener.accept().await {
+            while let Ok((stream, addr)) = tcp_listener.accept().await {
                 let peer = Arc::clone(&peer);
 
                 tokio::spawn(async move {
@@ -46,6 +53,10 @@ impl WebSocket {
         });
 
         Ok(())
+    }
+
+    pub fn addr(&self) -> SocketAddr {
+        self.addr
     }
 
     async fn handle_connection(
