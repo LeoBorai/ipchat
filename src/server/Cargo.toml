@@ -2,7 +2,7 @@
 name = "ipchat"
 version = "0.0.0"
 edition = "2024"
-description = "Chat solution for local networks based on WLAN and Router's IP Addresses"
+description = "IP based Chat Solution for Local Network Communications"
 keywords = ["chat", "wlan", "local", "ip"]
 license = "MIT"
 readme = "../../README.md"

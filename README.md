@@ -1,7 +1,7 @@
 <div>
   <h1 align="center">IPChat</h1>
   <h4 align="center">
-    Chat solution for local networks based on WLAN and Router's IP Addresses
+    IP based Chat Solution for Local Network Communications
   </h4>
 </div>
 
