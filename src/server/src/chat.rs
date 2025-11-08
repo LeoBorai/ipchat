@@ -17,13 +17,13 @@ use tokio_tungstenite::tungstenite::Message;
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::peer::SharedPeer;
+use crate::peer::{PeerRoom, SharedPeer};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PeerInfo {
     pub ip: IpAddr,
     pub username: String,
-    pub rooms: Vec<String>,
+    pub rooms: Vec<PeerRoom>,
     // pub last_seen: std::time::Instant,
 }
 
@@ -170,8 +170,10 @@ impl ChatService {
 
                 peer.rooms.insert(room.id, room.clone());
 
-                if let Some(tx) = peer.connections.get(&addr) {
-                    let _ = tx.send(ServerMessage::RoomCreated { room });
+                if let Some(tx) = peer.connections.get(&addr)
+                    && let Err(err) = tx.send(ServerMessage::RoomCreated { room })
+                {
+                    error!(%addr, ?err, "Failed to send RoomCreated message");
                 }
 
                 Ok(())

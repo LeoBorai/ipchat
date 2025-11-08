@@ -20,8 +20,7 @@ pub type LocalIp = Ipv4Addr;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DiscoveryMessage {
-    pub username: String,
-    pub ip: Ipv4Addr,
+    pub peer_info: PeerInfo,
 }
 
 /// Service in charge of discovering other chat clients in the local network.
@@ -48,11 +47,6 @@ impl DiscoveryService {
     pub async fn start_beacon(&self, peer: SharedPeer) -> Result<()> {
         let broadcast_ip = self.broadcast_ip;
         let socket = Self::create_broadcast_socket()?;
-        let peer = peer.read().await;
-        let message = DiscoveryMessage {
-            username: peer.username.clone(),
-            ip: self.local_ip,
-        };
 
         tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(BROADCAST_INTERVAL_SECS));
@@ -61,7 +55,11 @@ impl DiscoveryService {
             loop {
                 interval.tick().await;
 
-                match serde_json::to_string(&message) {
+                let peer = peer.read().await;
+
+                match serde_json::to_string(&DiscoveryMessage {
+                    peer_info: peer.info(),
+                }) {
                     Ok(json) => match socket.send_to(json.as_bytes(), broadcast_addr).await {
                         Ok(len) => {
                             info!(len=%len, broadcast_addr=%broadcast_addr, "Broadcast message sent");
@@ -101,12 +99,8 @@ impl DiscoveryService {
                         if let Ok(msg_str) = std::str::from_utf8(&buf[..len])
                             && let Ok(disc_msg) = serde_json::from_str::<DiscoveryMessage>(msg_str)
                         {
-                            peer.write().await.add_peer(PeerInfo {
-                                ip: disc_msg.ip.into(),
-                                username: disc_msg.username.clone(),
-                                rooms: vec![],
-                            });
-                            info!(%addr, username=disc_msg.username, "Discovered peer");
+                            peer.write().await.add_peer(disc_msg.peer_info.clone());
+                            info!(%addr, ?disc_msg, "Discovered peer");
                         }
                     }
                     Err(e) => {

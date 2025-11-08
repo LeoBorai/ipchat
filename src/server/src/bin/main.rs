@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use ipchat::peer::Peer;
 use ipchat::{chat::ChatService, discovery::DiscoveryService};
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {

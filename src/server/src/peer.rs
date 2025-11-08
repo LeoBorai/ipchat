@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
@@ -18,6 +19,13 @@ pub struct Peer {
     pub connections: HashMap<SocketAddr, UnboundedSender<ServerMessage>>,
     pub rooms: HashMap<Uuid, Room>,
     pub discovered_peers: HashMap<IpAddr, PeerInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerRoom {
+    pub id: Uuid,
+    pub ip: IpAddr,
+    pub name: String,
 }
 
 impl Peer {
@@ -39,5 +47,21 @@ impl Peer {
 
     pub fn add_peer(&mut self, peer_info: PeerInfo) {
         self.discovered_peers.insert(peer_info.ip, peer_info);
+    }
+
+    pub fn info(&self) -> PeerInfo {
+        PeerInfo {
+            ip: self.ip.into(),
+            username: self.username.clone(),
+            rooms: self
+                .rooms
+                .values()
+                .map(|room| PeerRoom {
+                    id: room.id,
+                    ip: room.host,
+                    name: room.name.clone(),
+                })
+                .collect(),
+        }
     }
 }
