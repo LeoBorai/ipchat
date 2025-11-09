@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -13,11 +14,17 @@ use ipchat::services::Services;
 use ipchat::setup::Setup;
 use ipchat::ws::WebSocket;
 
+/// Default port for the HTTP server, stands for IPCH
+const DEFAULT_PORT: u16 = 4724;
+
 #[derive(Clone, Debug, Parser)]
 pub struct StartCmd {
     /// Username to use in the chat
     #[clap(short = 'u', long)]
     username: String,
+    /// Port to run the HTTP server on
+    #[clap(short = 'p', long, default_value_t = DEFAULT_PORT)]
+    port: u16,
 }
 
 impl StartCmd {
@@ -40,7 +47,8 @@ impl StartCmd {
         let ws = Arc::new(ws);
         let services = Services::new(setup.clone(), ws);
         let router = make_router(services).await?;
-        let listener = TcpListener::bind("0.0.0.0:7878").await?;
+        let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
+        let listener = TcpListener::bind(addr).await?;
         let server_addr = listener.local_addr()?;
 
         info!(%server_addr, "HTTP server listening");
@@ -49,7 +57,7 @@ impl StartCmd {
             .with_graceful_shutdown(shutdown_signal())
             .await?;
 
-        info!("Shutting down...");
+        info!("Shutting down…");
 
         Ok(())
     }
