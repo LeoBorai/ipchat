@@ -13,6 +13,8 @@ pub fn routes() -> Router {
 pub struct NodeObject {
     /// Installation path of the node
     pub install_path: String,
+    /// Client's IP Address
+    pub client_ip: String,
     /// WebSocket Address
     pub web_socket_addr: String,
 }

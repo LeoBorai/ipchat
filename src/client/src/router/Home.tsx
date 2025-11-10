@@ -10,6 +10,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+import { nodeInfo } from "../lib/api";
+
 export function Home() {
   const [username, setUsername] = useState("");
   const [isSetup, setIsSetup] = useState(false);
@@ -212,6 +214,13 @@ export function Home() {
         clearTimeout(reconnectTimeout.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+   	nodeInfo({
+      baseUrl: '',
+      fetch
+    });
   }, []);
 
   // Format timestamp

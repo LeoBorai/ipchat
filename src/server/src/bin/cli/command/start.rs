@@ -53,9 +53,12 @@ impl StartCmd {
 
         info!(%server_addr, "HTTP server listening");
 
-        axum::serve(listener, router)
-            .with_graceful_shutdown(shutdown_signal())
-            .await?;
+        axum::serve(
+            listener,
+            router.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
         info!("Shutting down…");
 
