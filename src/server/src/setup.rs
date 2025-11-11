@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{net::SocketAddr, path::PathBuf};
 
 use anyhow::Result;
 use tokio::fs::create_dir_all;
@@ -15,15 +15,20 @@ pub struct Config {
 pub struct Setup {
     home_dir: PathBuf,
     config: Config,
+    local_ip: SocketAddr,
 }
 
 impl Setup {
-    pub async fn new() -> Result<Self> {
+    pub async fn new(local_ip: SocketAddr) -> Result<Self> {
         let home_dir = Self::setup_home_dir().await?;
         let config = Config {
             name: "anonymous".to_string(),
         };
-        Ok(Self { home_dir, config })
+        Ok(Self {
+            home_dir,
+            config,
+            local_ip,
+        })
     }
 
     #[inline]
@@ -34,6 +39,11 @@ impl Setup {
     #[inline]
     pub const fn config(&self) -> &Config {
         &self.config
+    }
+
+    #[inline]
+    pub const fn local_ip(&self) -> &SocketAddr {
+        &self.local_ip
     }
 
     async fn setup_home_dir() -> Result<PathBuf> {

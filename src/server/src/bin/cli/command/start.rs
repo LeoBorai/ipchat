@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use clap::Parser;
+use local_ip_address::local_ip;
 use tokio::net::TcpListener;
 use tracing::info;
 
@@ -26,7 +27,9 @@ pub struct StartCmd {
 
 impl StartCmd {
     pub async fn exec(&self) -> Result<()> {
-        let setup = Setup::new().await?;
+        let local_ip = local_ip()?;
+        let local_ip = SocketAddr::new(local_ip, self.port);
+        let setup = Setup::new(local_ip).await?;
         let discovery = DiscoveryService::new().await?;
         let node = Node::new(setup.config().name.clone())?;
         let node = node.shared();
@@ -46,7 +49,7 @@ impl StartCmd {
         let listener = TcpListener::bind(addr).await?;
         let server_addr = listener.local_addr()?;
 
-        info!(%server_addr, "HTTP server listening");
+        info!(%server_addr, %local_ip, "HTTP server listening");
 
         axum::serve(
             listener,

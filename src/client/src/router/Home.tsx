@@ -217,10 +217,24 @@ export function Home() {
   }, []);
 
   useEffect(() => {
-   	nodeInfo({
-      baseUrl: '',
-      fetch
-    });
+    (async () => {
+      const nodeInfoData = await nodeInfo({
+        baseUrl: "",
+        fetch,
+      });
+
+      const webSocketPort = nodeInfoData.data.webSocketAddr.split(":")[1];
+
+      // we are running in the same machine as the server
+      if (nodeInfoData.data.clientIp.startsWith("127.0.0.1")) {
+        setServerUrl(`ws://localhost:${webSocketPort}`);
+        return;
+      }
+
+      const serverLocalIpAddr = nodeInfoData.data.localIp.split(":")[0];
+
+      setServerUrl(`ws://${serverLocalIpAddr}:${webSocketPort}`);
+    })();
   }, []);
 
   // Format timestamp

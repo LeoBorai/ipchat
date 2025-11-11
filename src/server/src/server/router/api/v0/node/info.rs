@@ -26,6 +26,7 @@ pub async fn handler(
     Ok(Json(NodeObject {
         install_path: services.setup.home_dir().to_string_lossy().to_string(),
         client_ip: client_ip.to_string(),
+        local_ip: services.setup.local_ip().to_string(),
         web_socket_addr: services.web_socket.addr().to_string(),
     }))
 }

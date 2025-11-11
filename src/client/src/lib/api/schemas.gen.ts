@@ -2,7 +2,7 @@
 
 export const NodeObjectSchema = {
   type: "object",
-  required: ["install_path", "client_ip", "web_socket_addr"],
+  required: ["install_path", "client_ip", "local_ip", "web_socket_addr"],
   properties: {
     client_ip: {
       type: "string",
@@ -11,6 +11,10 @@ export const NodeObjectSchema = {
     install_path: {
       type: "string",
       description: "Installation path of the node",
+    },
+    local_ip: {
+      type: "string",
+      description: "Node's Local IP Address",
     },
     web_socket_addr: {
       type: "string",

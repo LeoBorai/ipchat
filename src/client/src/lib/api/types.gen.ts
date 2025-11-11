@@ -14,6 +14,10 @@ export type NodeObject = {
    */
   install_path: string;
   /**
+   * Node's Local IP Address
+   */
+  local_ip: string;
+  /**
    * WebSocket Address
    */
   web_socket_addr: string;

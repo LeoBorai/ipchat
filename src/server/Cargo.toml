@@ -24,6 +24,7 @@ clap = { workspace = true, features = ["std", "derive", "env"] }
 futures-util = { workspace = true }
 http = { workspace = true }
 if-addrs = { workspace = true }
+local-ip-address = { workspace = true }
 mime_guess = { workspace = true }
 rust-embed = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
