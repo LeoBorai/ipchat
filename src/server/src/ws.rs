@@ -13,8 +13,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::chat::{ChatMessage, ClientMessage, Room, ServerMessage};
-use crate::node::ArcNode;
-use crate::peer::PeerInfo;
+use crate::node::{ArcNode, NodeInfo};
 
 /// Service in charge of handling WebSocket connections for real-time chat communication
 pub struct WebSocket {
@@ -140,7 +139,7 @@ impl WebSocket {
 
             ClientMessage::SendMessage { room_id, content } => {
                 let mut node = node.write().await;
-                let username = node.username.clone();
+                let username = node.name.clone();
 
                 if let Some(room) = node.rooms.get_mut(&room_id) {
                     let message = ChatMessage {
@@ -163,12 +162,12 @@ impl WebSocket {
                 Ok(())
             }
 
-            ClientMessage::ListPeers => {
-                let peer = node.read().await;
-                let peers: Vec<PeerInfo> = peer.discovered_peers.values().cloned().collect();
+            ClientMessage::ListNodes => {
+                let node = node.read().await;
+                let nodes: Vec<NodeInfo> = node.discovered_nodes.values().cloned().collect();
 
-                if let Some(tx) = peer.connections.get(&addr) {
-                    let _ = tx.send(ServerMessage::PeerList { peers });
+                if let Some(tx) = node.connections.get(&addr) {
+                    let _ = tx.send(ServerMessage::NodeList { nodes });
                 }
 
                 Ok(())

@@ -8,8 +8,7 @@ use tokio::net::UdpSocket;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
-use crate::node::ArcNode;
-use crate::peer::PeerInfo;
+use crate::node::{ArcNode, NodeInfo};
 
 const BROADCAST_INTERVAL_SECS: u64 = 5;
 const DISCOVERY_PORT: u16 = 9001;
@@ -20,7 +19,7 @@ pub type LocalIp = Ipv4Addr;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DiscoveryMessage {
-    pub peer_info: PeerInfo,
+    pub node_info: NodeInfo,
 }
 
 /// Service in charge of discovering other chat clients in the local network.
@@ -58,7 +57,7 @@ impl DiscoveryService {
                 let node = node.read().await;
 
                 match serde_json::to_string(&DiscoveryMessage {
-                    peer_info: node.info(),
+                    node_info: node.info(),
                 }) {
                     Ok(json) => match socket.send_to(json.as_bytes(), broadcast_addr).await {
                         Ok(len) => {
@@ -99,7 +98,7 @@ impl DiscoveryService {
                         if let Ok(msg_str) = std::str::from_utf8(&buf[..len])
                             && let Ok(disc_msg) = serde_json::from_str::<DiscoveryMessage>(msg_str)
                         {
-                            node.write().await.add_peer(disc_msg.peer_info.clone());
+                            node.write().await.add_node(disc_msg.node_info.clone());
                             info!(%addr, ?disc_msg, "Discovered peer");
                         }
                     }

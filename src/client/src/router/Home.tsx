@@ -147,7 +147,7 @@ export function Home() {
 
   // API functions
   const requestPeerList = () => {
-    sendToServer({ type: "ListPeers" });
+    sendToServer({ type: "ListNodes" });
   };
 
   const requestRoomList = () => {

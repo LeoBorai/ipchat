@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::peer::PeerInfo;
+use crate::node::NodeInfo;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {
@@ -33,7 +33,7 @@ pub enum ClientMessage {
     LeaveRoom { room_id: Uuid },
     Register { username: String },
     SendMessage { room_id: Uuid, content: String },
-    ListPeers,
+    ListNodes,
     ListRooms,
 }
 
@@ -44,7 +44,7 @@ pub enum ServerMessage {
     RoomJoined { room: Room },
     RoomLeft { room_id: Uuid },
     NewMessage { message: ChatMessage },
-    PeerList { peers: Vec<PeerInfo> },
+    NodeList { nodes: Vec<NodeInfo> },
     RoomList { rooms: Vec<Room> },
     Error { message: String },
 }
