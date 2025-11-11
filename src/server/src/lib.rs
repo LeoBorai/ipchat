@@ -1,6 +1,8 @@
 pub mod chat;
 pub mod discovery;
 pub mod domain;
+pub mod graceful_shutdown;
+pub mod node;
 pub mod peer;
 pub mod server;
 pub mod services;
