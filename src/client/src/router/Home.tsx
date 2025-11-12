@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Wifi,
   Users,
   MessageSquare,
   Plus,
   Send,
-  X,
   User,
   RefreshCw,
 } from "lucide-react";
 
 import { nodeInfo } from "../lib/api";
+import { SignInForm } from "../components/atoms/SignInForm";
 
 export function Home() {
   const [username, setUsername] = useState("");
@@ -186,12 +185,12 @@ export function Home() {
   };
 
   // Setup handler
-  const handleSetup = () => {
-    if (username.trim()) {
-      setIsSetup(true);
-      setConnectionStatus("Connecting...");
-      connectWebSocket();
-    }
+  const handleSetup = (user: string, url: string) => {
+    setUsername(user);
+    setServerUrl(url);
+    setIsSetup(true);
+    setConnectionStatus("Connecting...");
+    connectWebSocket();
   };
 
   // Periodic peer refresh
@@ -249,62 +248,7 @@ export function Home() {
   };
 
   if (!isSetup) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="bg-white p-8 rounded-2xl shadow-xl w-96">
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-indigo-100 p-3 rounded-full">
-              <Wifi className="w-8 h-8 text-indigo-600" />
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-center mb-2 text-gray-800">
-            Local Network Chat
-          </h1>
-          <p className="text-center text-gray-600 mb-6 text-sm">
-            Connect to Rust P2P Server
-          </p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Server Address
-              </label>
-              <input
-                type="text"
-                placeholder="ws://localhost:8080"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && username.trim() && handleSetup()
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <button
-              onClick={handleSetup}
-              disabled={!username.trim()}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Connect to Network
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <SignInForm onSubmit={handleSetup} initialServerUrl={serverUrl} />;
   }
 
   return (
