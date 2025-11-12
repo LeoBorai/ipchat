@@ -28,11 +28,24 @@ pub struct Room {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ClientMessage {
-    CreateRoom { name: String },
-    JoinRoom { room_id: Uuid, peer_ip: IpAddr },
-    LeaveRoom { room_id: Uuid },
-    Register { username: String },
-    SendMessage { room_id: Uuid, content: String },
+    CreateRoom {
+        name: String,
+    },
+    JoinRoom {
+        room_id: Uuid,
+        peer_ip: IpAddr,
+    },
+    LeaveRoom {
+        room_id: Uuid,
+    },
+    Register {
+        username: String,
+    },
+    SendMessage {
+        room_id: Uuid,
+        sender: String,
+        content: String,
+    },
     ListNodes,
     ListRooms,
 }

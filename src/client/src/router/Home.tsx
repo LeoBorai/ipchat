@@ -179,6 +179,7 @@ export function Home() {
         type: "SendMessage",
         room_id: activeRoom.id,
         content: newMessage,
+        sender: username,
       });
       setNewMessage("");
     }

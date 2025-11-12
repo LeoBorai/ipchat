@@ -7,38 +7,21 @@ use tracing::info;
 use crate::util::path::home_dir;
 
 #[derive(Clone, Debug)]
-pub struct Config {
-    pub name: String,
-}
-
-#[derive(Clone, Debug)]
 pub struct Setup {
     home_dir: PathBuf,
-    config: Config,
     local_ip: SocketAddr,
 }
 
 impl Setup {
     pub async fn new(local_ip: SocketAddr) -> Result<Self> {
         let home_dir = Self::setup_home_dir().await?;
-        let config = Config {
-            name: "anonymous".to_string(),
-        };
-        Ok(Self {
-            home_dir,
-            config,
-            local_ip,
-        })
+
+        Ok(Self { home_dir, local_ip })
     }
 
     #[inline]
     pub const fn home_dir(&self) -> &PathBuf {
         &self.home_dir
-    }
-
-    #[inline]
-    pub const fn config(&self) -> &Config {
-        &self.config
     }
 
     #[inline]

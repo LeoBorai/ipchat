@@ -17,25 +17,22 @@ pub type ArcNode = Arc<RwLock<Node>>;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeInfo {
     pub ip: IpAddr,
-    pub name: String,
     pub rooms: Vec<PeerRoom>,
 }
 
 pub struct Node {
     pub ip: Ipv4Addr,
-    pub name: String,
     pub connections: HashMap<SocketAddr, UnboundedSender<ServerMessage>>,
     pub rooms: HashMap<Uuid, Room>,
     pub discovered_nodes: HashMap<IpAddr, NodeInfo>,
 }
 
 impl Node {
-    pub fn new(name: String) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let ip = DiscoveryService::find_local_ip()?;
 
         Ok(Self {
             ip,
-            name,
             connections: HashMap::new(),
             rooms: HashMap::new(),
             discovered_nodes: HashMap::new(),
@@ -53,7 +50,6 @@ impl Node {
     pub fn info(&self) -> NodeInfo {
         NodeInfo {
             ip: self.ip.into(),
-            name: self.name.clone(),
             rooms: self
                 .rooms
                 .values()
