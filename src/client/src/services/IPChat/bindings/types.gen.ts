@@ -8,19 +8,19 @@ export type NodeObject = {
   /**
    * Client's IP Address
    */
-  client_ip: string;
+  clientIp: string;
   /**
    * Installation path of the node
    */
-  install_path: string;
+  installPath: string;
   /**
    * Node's Local IP Address
    */
-  local_ip: string;
+  localIp: string;
   /**
    * WebSocket Address
    */
-  web_socket_addr: string;
+  webSocketAddr: string;
 };
 
 export type NodeInfoData = {

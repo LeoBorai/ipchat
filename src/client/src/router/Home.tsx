@@ -8,7 +8,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { nodeInfo } from "../lib/api";
+import { nodeInfo } from "../services/IPChat/bindings/sdk.gen";
 import { SignInForm } from "../components/atoms/SignInForm";
 import { ChatWebSocketService } from "../services/ChatWebSocketService";
 
