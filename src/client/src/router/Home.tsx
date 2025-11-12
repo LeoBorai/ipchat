@@ -10,6 +10,12 @@ import {
 
 import { nodeInfo } from "../lib/api";
 import { SignInForm } from "../components/atoms/SignInForm";
+import { ChatWebSocketService } from "../services/ChatWebSocketService";
+
+import type {
+  ConnectionStatus,
+  ServerMessage,
+} from "../services/ChatWebSocketService";
 
 export function Home() {
   const [username, setUsername] = useState("");
@@ -24,63 +30,31 @@ export function Home() {
   const [newMessage, setNewMessage] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState("Disconnected");
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("Disconnected");
 
-  const ws = useRef(null);
-  const reconnectTimeout = useRef(null);
+  const wsService = useRef<ChatWebSocketService | null>(null);
 
   // WebSocket connection management
   const connectWebSocket = () => {
-    try {
-      ws.current = new WebSocket(serverUrl);
+    wsService.current = new ChatWebSocketService({
+      serverUrl,
+      onConnectionChange: (connected, status) => {
+        setIsConnected(connected);
+        setConnectionStatus(status);
+      },
+      onMessage: handleServerMessage,
+      onInitialConnect: () => {
+        wsService.current?.listNodes();
+        wsService.current?.listRooms();
+      },
+    });
 
-      ws.current.onopen = () => {
-        console.log("Connected to server");
-        setIsConnected(true);
-        setConnectionStatus("Connected");
-
-        // Request initial data
-        requestPeerList();
-        requestRoomList();
-      };
-
-      ws.current.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          handleServerMessage(message);
-        } catch (error) {
-          console.error("Failed to parse message:", error);
-        }
-      };
-
-      ws.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setConnectionStatus("Error");
-      };
-
-      ws.current.onclose = () => {
-        console.log("Disconnected from server");
-        setIsConnected(false);
-        setConnectionStatus("Disconnected");
-
-        // Attempt to reconnect after 3 seconds
-        reconnectTimeout.current = setTimeout(() => {
-          if (isSetup) {
-            setConnectionStatus("Reconnecting...");
-            connectWebSocket();
-          }
-        }, 3000);
-      };
-    } catch (error) {
-      console.error("Failed to connect:", error);
-      setConnectionStatus("Connection Failed");
-    }
+    wsService.current.connect();
   };
 
   // Handle messages from server
-  const handleServerMessage = (message) => {
-    console.log("Received:", message);
-
+  const handleServerMessage = (message: ServerMessage) => {
     switch (message.type) {
       case "RoomCreated":
         setMyRooms((prev) => [...prev, message.room]);
@@ -131,55 +105,34 @@ export function Home() {
         break;
 
       default:
-        console.log("Unknown message type:", message.type);
-    }
-  };
-
-  // Send message to server
-  const sendToServer = (message) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message));
-    } else {
-      console.error("WebSocket is not connected");
+        console.log("Unknown message type:", message);
     }
   };
 
   // API functions
   const requestPeerList = () => {
-    sendToServer({ type: "ListNodes" });
+    wsService.current?.listNodes();
   };
 
   const requestRoomList = () => {
-    sendToServer({ type: "ListRooms" });
+    wsService.current?.listRooms();
   };
 
   const createRoom = () => {
     if (newRoomName.trim()) {
-      sendToServer({
-        type: "CreateRoom",
-        name: newRoomName,
-      });
+      wsService.current?.createRoom(newRoomName);
       setNewRoomName("");
       setShowCreateRoom(false);
     }
   };
 
   const joinRoom = (roomId, peerIp) => {
-    sendToServer({
-      type: "JoinRoom",
-      room_id: roomId,
-      peer_ip: peerIp,
-    });
+    wsService.current?.joinRoom(roomId, peerIp);
   };
 
   const sendMessage = () => {
     if (newMessage.trim() && activeRoom) {
-      sendToServer({
-        type: "SendMessage",
-        room_id: activeRoom.id,
-        content: newMessage,
-        sender: username,
-      });
+      wsService.current?.sendMessage(activeRoom.id, newMessage, username);
       setNewMessage("");
     }
   };
@@ -207,12 +160,7 @@ export function Home() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-      }
+      wsService.current?.disconnect();
     };
   }, []);
 

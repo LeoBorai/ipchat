@@ -6,7 +6,10 @@ interface SignInFormProps {
   initialServerUrl?: string;
 }
 
-export function SignInForm({ onSubmit, initialServerUrl = "ws://localhost:8080" }: SignInFormProps) {
+export function SignInForm({
+  onSubmit,
+  initialServerUrl = "ws://localhost:8080",
+}: SignInFormProps) {
   const [username, setUsername] = useState("");
   const [serverUrl, setServerUrl] = useState(initialServerUrl);
 
