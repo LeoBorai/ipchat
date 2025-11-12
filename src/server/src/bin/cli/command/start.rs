@@ -31,7 +31,7 @@ impl StartCmd {
         let local_ip = SocketAddr::new(local_ip, self.port);
         let setup = Setup::new(local_ip).await?;
         let discovery = DiscoveryService::new().await?;
-        let node = Node::new(setup.config().name.clone())?;
+        let node = Node::new()?;
         let node = node.shared();
 
         discovery.start_beacon(Arc::clone(&node)).await?;

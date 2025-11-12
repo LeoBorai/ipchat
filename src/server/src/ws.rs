@@ -137,15 +137,18 @@ impl WebSocket {
                 Ok(())
             }
 
-            ClientMessage::SendMessage { room_id, content } => {
+            ClientMessage::SendMessage {
+                room_id,
+                sender,
+                content,
+            } => {
                 let mut node = node.write().await;
-                let username = node.name.clone();
 
                 if let Some(room) = node.rooms.get_mut(&room_id) {
                     let message = ChatMessage {
-                        sender: username.clone(),
-                        content,
                         timestamp: Utc::now(),
+                        sender,
+                        content,
                         room_id,
                     };
 
