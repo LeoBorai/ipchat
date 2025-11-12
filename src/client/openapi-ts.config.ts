@@ -3,7 +3,7 @@ import { defineConfig } from "@hey-api/openapi-ts";
 export default defineConfig({
   input: "http://localhost:4724/api-docs/openapi.json",
   output: {
-    path: "src/lib/api",
+    path: "src/services/IPChat/bindings",
     format: "prettier",
     lint: "eslint",
   },

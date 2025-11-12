@@ -1,16 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Wifi,
   Users,
   MessageSquare,
   Plus,
   Send,
-  X,
   User,
   RefreshCw,
 } from "lucide-react";
 
-import { nodeInfo } from "../lib/api";
+import { nodeInfo } from "../services/IPChat/bindings/sdk.gen";
+import { SignInForm } from "../components/atoms/SignInForm";
+import { ChatWebSocketService } from "../services/ChatWebSocketService";
+
+import type {
+  ConnectionStatus,
+  ServerMessage,
+} from "../services/ChatWebSocketService";
 
 export function Home() {
   const [username, setUsername] = useState("");
@@ -25,63 +30,31 @@ export function Home() {
   const [newMessage, setNewMessage] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState("Disconnected");
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("Disconnected");
 
-  const ws = useRef(null);
-  const reconnectTimeout = useRef(null);
+  const wsService = useRef<ChatWebSocketService | null>(null);
 
   // WebSocket connection management
   const connectWebSocket = () => {
-    try {
-      ws.current = new WebSocket(serverUrl);
+    wsService.current = new ChatWebSocketService({
+      serverUrl,
+      onConnectionChange: (connected, status) => {
+        setIsConnected(connected);
+        setConnectionStatus(status);
+      },
+      onMessage: handleServerMessage,
+      onInitialConnect: () => {
+        wsService.current?.listNodes();
+        wsService.current?.listRooms();
+      },
+    });
 
-      ws.current.onopen = () => {
-        console.log("Connected to server");
-        setIsConnected(true);
-        setConnectionStatus("Connected");
-
-        // Request initial data
-        requestPeerList();
-        requestRoomList();
-      };
-
-      ws.current.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          handleServerMessage(message);
-        } catch (error) {
-          console.error("Failed to parse message:", error);
-        }
-      };
-
-      ws.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setConnectionStatus("Error");
-      };
-
-      ws.current.onclose = () => {
-        console.log("Disconnected from server");
-        setIsConnected(false);
-        setConnectionStatus("Disconnected");
-
-        // Attempt to reconnect after 3 seconds
-        reconnectTimeout.current = setTimeout(() => {
-          if (isSetup) {
-            setConnectionStatus("Reconnecting...");
-            connectWebSocket();
-          }
-        }, 3000);
-      };
-    } catch (error) {
-      console.error("Failed to connect:", error);
-      setConnectionStatus("Connection Failed");
-    }
+    wsService.current.connect();
   };
 
   // Handle messages from server
-  const handleServerMessage = (message) => {
-    console.log("Received:", message);
-
+  const handleServerMessage = (message: ServerMessage) => {
     switch (message.type) {
       case "RoomCreated":
         setMyRooms((prev) => [...prev, message.room]);
@@ -132,66 +105,45 @@ export function Home() {
         break;
 
       default:
-        console.log("Unknown message type:", message.type);
-    }
-  };
-
-  // Send message to server
-  const sendToServer = (message) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message));
-    } else {
-      console.error("WebSocket is not connected");
+        console.log("Unknown message type:", message);
     }
   };
 
   // API functions
   const requestPeerList = () => {
-    sendToServer({ type: "ListNodes" });
+    wsService.current?.listNodes();
   };
 
   const requestRoomList = () => {
-    sendToServer({ type: "ListRooms" });
+    wsService.current?.listRooms();
   };
 
   const createRoom = () => {
     if (newRoomName.trim()) {
-      sendToServer({
-        type: "CreateRoom",
-        name: newRoomName,
-      });
+      wsService.current?.createRoom(newRoomName);
       setNewRoomName("");
       setShowCreateRoom(false);
     }
   };
 
   const joinRoom = (roomId, peerIp) => {
-    sendToServer({
-      type: "JoinRoom",
-      room_id: roomId,
-      peer_ip: peerIp,
-    });
+    wsService.current?.joinRoom(roomId, peerIp);
   };
 
   const sendMessage = () => {
     if (newMessage.trim() && activeRoom) {
-      sendToServer({
-        type: "SendMessage",
-        room_id: activeRoom.id,
-        content: newMessage,
-        sender: username,
-      });
+      wsService.current?.sendMessage(activeRoom.id, newMessage, username);
       setNewMessage("");
     }
   };
 
   // Setup handler
-  const handleSetup = () => {
-    if (username.trim()) {
-      setIsSetup(true);
-      setConnectionStatus("Connecting...");
-      connectWebSocket();
-    }
+  const handleSetup = (user: string, url: string) => {
+    setUsername(user);
+    setServerUrl(url);
+    setIsSetup(true);
+    setConnectionStatus("Connecting...");
+    connectWebSocket();
   };
 
   // Periodic peer refresh
@@ -208,12 +160,7 @@ export function Home() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-      }
+      wsService.current?.disconnect();
     };
   }, []);
 
@@ -249,62 +196,7 @@ export function Home() {
   };
 
   if (!isSetup) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="bg-white p-8 rounded-2xl shadow-xl w-96">
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-indigo-100 p-3 rounded-full">
-              <Wifi className="w-8 h-8 text-indigo-600" />
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-center mb-2 text-gray-800">
-            Local Network Chat
-          </h1>
-          <p className="text-center text-gray-600 mb-6 text-sm">
-            Connect to Rust P2P Server
-          </p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Server Address
-              </label>
-              <input
-                type="text"
-                placeholder="ws://localhost:8080"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && username.trim() && handleSetup()
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <button
-              onClick={handleSetup}
-              disabled={!username.trim()}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Connect to Network
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <SignInForm onSubmit={handleSetup} initialServerUrl={serverUrl} />;
   }
 
   return (

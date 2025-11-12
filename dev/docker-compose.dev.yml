@@ -1,0 +1,12 @@
+services:
+  claude:
+    image: 'ghcr.io/leoborai/docker-claude:41b6bb4'
+    volumes:
+      - ../:/workspaces/dev
+      - claude:/root/.claude
+    command: sleep infinity
+    stdin_open: true
+    tty: true
+
+volumes:
+  claude:
