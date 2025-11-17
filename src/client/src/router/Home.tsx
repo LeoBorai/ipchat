@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Users,
   MessageSquare,
@@ -8,17 +8,18 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { nodeInfo } from "../services/IPChat/bindings/sdk.gen";
 import { SignInForm } from "../components/atoms/SignInForm";
 import { useChatWebSocket } from "../contexts/ChatWebSocketContext";
+import { useNode } from "../contexts/NodeContext";
 
 export function Home() {
   const [username, setUsername] = useState("");
   const [isSetup, setIsSetup] = useState(false);
-  const [serverUrl, setServerUrl] = useState("ws://localhost:8080");
   const [newMessage, setNewMessage] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
+
+  const { serverUrl } = useNode();
 
   const {
     isConnected,
@@ -38,7 +39,6 @@ export function Home() {
   // Setup handler
   const handleSetup = (user: string, url: string) => {
     setUsername(user);
-    setServerUrl(url);
     setIsSetup(true);
     connect(url);
   };
@@ -61,27 +61,6 @@ export function Home() {
       setNewMessage("");
     }
   };
-
-  useEffect(() => {
-    (async () => {
-      const nodeInfoData = await nodeInfo({
-        baseUrl: "",
-        fetch,
-      });
-
-      const webSocketPort = nodeInfoData.data.webSocketAddr.split(":")[1];
-
-      // we are running in the same machine as the server
-      if (nodeInfoData.data.clientIp.startsWith("127.0.0.1")) {
-        setServerUrl(`ws://localhost:${webSocketPort}`);
-        return;
-      }
-
-      const serverLocalIpAddr = nodeInfoData.data.localIp.split(":")[0];
-
-      setServerUrl(`ws://${serverLocalIpAddr}:${webSocketPort}`);
-    })();
-  }, []);
 
   // Format timestamp
   const formatTime = (timestamp) => {

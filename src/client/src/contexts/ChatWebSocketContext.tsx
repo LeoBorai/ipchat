@@ -63,7 +63,6 @@ export function ChatWebSocketProvider({ children }: Props): JSX.Element {
   const [discoveredPeers, setDiscoveredPeers] = useState<Peer[]>([]);
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
-
   const wsService = useRef<ChatWebSocketService | null>(null);
 
   // Handle messages from server
