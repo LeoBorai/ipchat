@@ -54,8 +54,8 @@ export function Home() {
     }
   };
 
-  const formatTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
+  const formatTime = (timestamp: string | number): string => {
+    const date = new Date(typeof timestamp === "string" ? parseInt(timestamp, 10) : timestamp);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
