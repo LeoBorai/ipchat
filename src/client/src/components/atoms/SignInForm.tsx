@@ -3,7 +3,6 @@ import { Wifi } from "lucide-react";
 
 interface SignInFormProps {
   onSubmit: (username: string) => void;
-  initialServerUrl?: string;
 }
 
 export function SignInForm({ onSubmit }: SignInFormProps) {
