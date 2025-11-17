@@ -18,9 +18,7 @@ export function Home() {
   const [newMessage, setNewMessage] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-
   const { serverUrl } = useNode();
-
   const {
     isConnected,
     connectionStatus,
@@ -31,16 +29,14 @@ export function Home() {
     setActiveRoom,
     requestPeerList,
     createRoom: contextCreateRoom,
-    joinRoom: contextJoinRoom,
     sendMessage: contextSendMessage,
     connect,
   } = useChatWebSocket();
 
-  // Setup handler
-  const handleSetup = (user: string, url: string) => {
+  const handleSetup = (user: string) => {
     setUsername(user);
     setIsSetup(true);
-    connect(url);
+    connect(serverUrl);
   };
 
   const handleCreateRoom = () => {
@@ -51,10 +47,6 @@ export function Home() {
     }
   };
 
-  const handleJoinRoom = (roomId: string, peerIp: string) => {
-    contextJoinRoom(roomId, peerIp);
-  };
-
   const handleSendMessage = () => {
     if (newMessage.trim() && activeRoom) {
       contextSendMessage(activeRoom.id, newMessage, username);
@@ -62,8 +54,7 @@ export function Home() {
     }
   };
 
-  // Format timestamp
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
@@ -189,7 +180,6 @@ export function Home() {
                   <p className="text-xs text-gray-500 font-mono mb-2">
                     {peer.ip}
                   </p>
-                  {console.log(peer)}
                   {/*{peer.rooms && peer.rooms.length > 0 ? (
                     <div className="space-y-1">
                       {peer.rooms.map((roomName) => (
@@ -257,7 +247,7 @@ export function Home() {
                           : "text-gray-500"
                       }`}
                     >
-                      {formatTime(msg.timestamp)}
+                      {formatTime(parseInt(msg.timestamp, 10))}
                     </p>
                   </div>
                 </div>

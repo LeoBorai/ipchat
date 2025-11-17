@@ -8,7 +8,6 @@ import type {
   ServerMessage,
 } from "../services/ChatWebSocketService";
 
-
 export type Props = {
   children: JSX.Element | JSX.Element[];
 };

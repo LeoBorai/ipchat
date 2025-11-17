@@ -24,7 +24,7 @@ export interface ChatWebSocketConfig {
 
 export class ChatWebSocketService {
   private ws: WebSocket | null = null;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: number | null = null;
   private config: ChatWebSocketConfig;
   private shouldReconnect: boolean = false;
 
@@ -42,6 +42,7 @@ export class ChatWebSocketService {
 
   private createConnection(): void {
     try {
+      console.log("Connecting to server:", this.config.serverUrl);
       this.config.onConnectionChange?.(false, "Connecting...");
       this.ws = new WebSocket(this.config.serverUrl);
 
@@ -113,7 +114,6 @@ export class ChatWebSocketService {
     this.config.serverUrl = serverUrl;
   }
 
-  // API methods
   public listNodes(): void {
     this.send({ type: "ListNodes" });
   }
