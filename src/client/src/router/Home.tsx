@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   MessageSquare,
@@ -10,159 +10,57 @@ import {
 
 import { nodeInfo } from "../services/IPChat/bindings/sdk.gen";
 import { SignInForm } from "../components/atoms/SignInForm";
-import { ChatWebSocketService } from "../services/ChatWebSocketService";
-
-import type {
-  ConnectionStatus,
-  ServerMessage,
-} from "../services/ChatWebSocketService";
+import { useChatWebSocket } from "../contexts/ChatWebSocketContext";
 
 export function Home() {
   const [username, setUsername] = useState("");
   const [isSetup, setIsSetup] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const [serverUrl, setServerUrl] = useState("ws://localhost:8080");
-
-  const [myRooms, setMyRooms] = useState([]);
-  const [discoveredPeers, setDiscoveredPeers] = useState([]);
-  const [activeRoom, setActiveRoom] = useState(null);
-  const [messages, setMessages] = useState({});
   const [newMessage, setNewMessage] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [connectionStatus, setConnectionStatus] =
-    useState<ConnectionStatus>("Disconnected");
 
-  const wsService = useRef<ChatWebSocketService | null>(null);
-
-  // WebSocket connection management
-  const connectWebSocket = () => {
-    wsService.current = new ChatWebSocketService({
-      serverUrl,
-      onConnectionChange: (connected, status) => {
-        setIsConnected(connected);
-        setConnectionStatus(status);
-      },
-      onMessage: handleServerMessage,
-      onInitialConnect: () => {
-        wsService.current?.listNodes();
-        wsService.current?.listRooms();
-      },
-    });
-
-    wsService.current.connect();
-  };
-
-  // Handle messages from server
-  const handleServerMessage = (message: ServerMessage) => {
-    switch (message.type) {
-      case "RoomCreated":
-        setMyRooms((prev) => [...prev, message.room]);
-        setMessages((prev) => ({ ...prev, [message.room.id]: [] }));
-        break;
-
-      case "RoomJoined":
-        setActiveRoom(message.room);
-        if (!messages[message.room.id]) {
-          setMessages((prev) => ({
-            ...prev,
-            [message.room.id]: [
-              {
-                sender: "System",
-                content: `You joined ${message.room.name}`,
-                timestamp: new Date().toISOString(),
-              },
-            ],
-          }));
-        }
-        break;
-
-      case "NewMessage":
-        setMessages((prev) => ({
-          ...prev,
-          [message.message.room_id]: [
-            ...(prev[message.message.room_id] || []),
-            message.message,
-          ],
-        }));
-        break;
-
-      case "PeerList":
-        setDiscoveredPeers(message.peers);
-        break;
-
-      case "RoomList":
-        setMyRooms(message.rooms);
-        message.rooms.forEach((room) => {
-          if (!messages[room.id]) {
-            setMessages((prev) => ({ ...prev, [room.id]: [] }));
-          }
-        });
-        break;
-
-      case "Error":
-        console.error("Server error:", message.message);
-        break;
-
-      default:
-        console.log("Unknown message type:", message);
-    }
-  };
-
-  // API functions
-  const requestPeerList = () => {
-    wsService.current?.listNodes();
-  };
-
-  const requestRoomList = () => {
-    wsService.current?.listRooms();
-  };
-
-  const createRoom = () => {
-    if (newRoomName.trim()) {
-      wsService.current?.createRoom(newRoomName);
-      setNewRoomName("");
-      setShowCreateRoom(false);
-    }
-  };
-
-  const joinRoom = (roomId, peerIp) => {
-    wsService.current?.joinRoom(roomId, peerIp);
-  };
-
-  const sendMessage = () => {
-    if (newMessage.trim() && activeRoom) {
-      wsService.current?.sendMessage(activeRoom.id, newMessage, username);
-      setNewMessage("");
-    }
-  };
+  const {
+    isConnected,
+    connectionStatus,
+    myRooms,
+    discoveredPeers,
+    activeRoom,
+    messages,
+    setActiveRoom,
+    requestPeerList,
+    createRoom: contextCreateRoom,
+    joinRoom: contextJoinRoom,
+    sendMessage: contextSendMessage,
+    connect,
+  } = useChatWebSocket();
 
   // Setup handler
   const handleSetup = (user: string, url: string) => {
     setUsername(user);
     setServerUrl(url);
     setIsSetup(true);
-    setConnectionStatus("Connecting...");
-    connectWebSocket();
+    connect(url);
   };
 
-  // Periodic peer refresh
-  useEffect(() => {
-    if (isConnected) {
-      const interval = setInterval(() => {
-        requestPeerList();
-      }, 5000);
-
-      return () => clearInterval(interval);
+  const handleCreateRoom = () => {
+    if (newRoomName.trim()) {
+      contextCreateRoom(newRoomName);
+      setNewRoomName("");
+      setShowCreateRoom(false);
     }
-  }, [isConnected]);
+  };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      wsService.current?.disconnect();
-    };
-  }, []);
+  const handleJoinRoom = (roomId: string, peerIp: string) => {
+    contextJoinRoom(roomId, peerIp);
+  };
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() && activeRoom) {
+      contextSendMessage(activeRoom.id, newMessage, username);
+      setNewMessage("");
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -254,11 +152,11 @@ export function Home() {
                   placeholder="Room name"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && createRoom()}
+                  onKeyPress={(e) => e.key === "Enter" && handleCreateRoom()}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
-                  onClick={createRoom}
+                  onClick={handleCreateRoom}
                   className="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
                 >
                   Add
@@ -397,12 +295,12 @@ export function Home() {
                   }
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                   disabled={!isConnected}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
                 />
                 <button
-                  onClick={sendMessage}
+                  onClick={handleSendMessage}
                   disabled={!isConnected || !newMessage.trim()}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
