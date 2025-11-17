@@ -104,10 +104,14 @@ export function ChatWebSocketProvider({ children }: Props): JSX.Element {
 
       case "RoomList":
         setMyRooms(message.rooms);
-        message.rooms.forEach((room) => {
-          if (!messages[room.id]) {
-            setMessages((prev) => ({ ...prev, [room.id]: [] }));
-          }
+        setMessages((prev) => {
+          const updates = { ...prev };
+          message.rooms.forEach((room) => {
+            if (!updates[room.id]) {
+              updates[room.id] = [];
+            }
+          });
+          return updates;
         });
         break;
 
