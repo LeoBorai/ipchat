@@ -64,7 +64,6 @@ export function ChatWebSocketProvider({ children }: Props): JSX.Element {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const wsService = useRef<ChatWebSocketService | null>(null);
 
-  // Handle messages from server
   const handleServerMessage = (message: ServerMessage) => {
     switch (message.type) {
       case "RoomCreated":
@@ -147,7 +146,6 @@ export function ChatWebSocketProvider({ children }: Props): JSX.Element {
     wsService.current?.disconnect();
   };
 
-  // API functions
   const requestPeerList = () => {
     wsService.current?.listNodes();
   };
@@ -168,7 +166,6 @@ export function ChatWebSocketProvider({ children }: Props): JSX.Element {
     wsService.current?.sendMessage(roomId, content, sender);
   };
 
-  // Periodic peer refresh
   useEffect(() => {
     if (isConnected) {
       const interval = setInterval(() => {
@@ -179,7 +176,6 @@ export function ChatWebSocketProvider({ children }: Props): JSX.Element {
     }
   }, [isConnected]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       wsService.current?.disconnect();
