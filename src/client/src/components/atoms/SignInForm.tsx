@@ -2,25 +2,20 @@ import { useState } from "react";
 import { Wifi } from "lucide-react";
 
 interface SignInFormProps {
-  onSubmit: (username: string, serverUrl: string) => void;
-  initialServerUrl?: string;
+  onSubmit: (username: string) => void;
 }
 
-export function SignInForm({
-  onSubmit,
-  initialServerUrl = "ws://localhost:8080",
-}: SignInFormProps) {
+export function SignInForm({ onSubmit }: SignInFormProps) {
   const [username, setUsername] = useState("");
-  const [serverUrl, setServerUrl] = useState(initialServerUrl);
 
   const handleSubmit = () => {
     if (username.trim()) {
-      onSubmit(username, serverUrl);
+      onSubmit(username);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex items-center justify-center min-h-screen from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-96">
         <div className="flex items-center justify-center mb-6">
           <div className="bg-indigo-100 p-3 rounded-full">
@@ -35,19 +30,6 @@ export function SignInForm({
         </p>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Server Address
-            </label>
-            <input
-              type="text"
-              placeholder="ws://localhost:8080"
-              value={serverUrl}
-              onChange={(e) => setServerUrl(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Username
