@@ -1,5 +1,9 @@
 # https://just.systems/man/en
 
+# Lists available commands
+default:
+	just --list
+
 # Builds both client and server
 build: build-client build-server
 	@echo "Build complete."
@@ -11,10 +15,6 @@ build-client:
 # Builds the server (Without optimizations)
 build-server:
 	cargo b
-
-# Lists available commands
-default:
-	just --list
 
 # Starts the development container
 dev:
