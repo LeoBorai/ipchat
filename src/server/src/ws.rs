@@ -128,10 +128,19 @@ impl WebSocket {
 
                 node.rooms.insert(room.id, room.clone());
 
-                if let Some(tx) = node.connections.get(&addr)
-                    && let Err(err) = tx.send(ServerMessage::RoomCreated { room })
-                {
-                    error!(%addr, ?err, "Failed to send RoomCreated message");
+                if let Some(tx) = node.connections.get(&addr) {
+                    if let Err(err) = tx.send(ServerMessage::RoomCreated { room: room.clone() }) {
+                        error!(%addr, ?err, "Failed to send RoomCreated message");
+                    }
+
+                    let mut connections = node.connections.clone();
+                    connections.remove(&addr);
+
+                    tokio::spawn(async move {
+                        for tx in connections.values() {
+                            let _ = tx.send(ServerMessage::RoomCreated { room: room.clone() });
+                        }
+                    });
                 }
 
                 Ok(())
