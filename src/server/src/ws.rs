@@ -9,7 +9,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, mpsc};
 use tokio_tungstenite::accept_async;
 use tokio_tungstenite::tungstenite::Message;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::chat::{ChatMessage, ClientMessage, Room, ServerMessage};
@@ -128,10 +128,20 @@ impl WebSocket {
 
                 node.rooms.insert(room.id, room.clone());
 
-                if let Some(tx) = node.connections.get(&addr)
-                    && let Err(err) = tx.send(ServerMessage::RoomCreated { room })
-                {
-                    error!(%addr, ?err, "Failed to send RoomCreated message");
+                // Drop `node` lock before sending messages to avoid deadlocks
+                let conns: Vec<_> = node
+                    .connections
+                    .iter()
+                    .map(|(addr, tx)| (*addr, tx.clone()))
+                    .collect();
+                drop(node);
+
+                let msg = ServerMessage::RoomCreated { room };
+
+                for (conn, tx) in conns.iter() {
+                    if let Err(err) = tx.send(msg.clone()) {
+                        warn!(?err, ?conn, "Failed to send RoomCreated message");
+                    }
                 }
 
                 Ok(())
