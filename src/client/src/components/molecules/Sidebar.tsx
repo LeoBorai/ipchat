@@ -45,13 +45,15 @@ export function Sidebar({ username }: SidebarProps) {
   return (
     <>
       {/* Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition"
-        title={isOpen ? "Close sidebar" : "Open sidebar"}
-      >
-        <PanelLeft className={`w-5 h-5 transition-transform ${isOpen ? "rotate-0" : "rotate-180"}`} />
-      </button>
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="fixed bottom-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition md:hidden"
+          title={isOpen ? "Close sidebar" : "Open sidebar"}
+        >
+          <PanelLeft className={`w-5 h-5 transition-transform ${isOpen ? "rotate-0" : "rotate-180"}`} />
+        </button>
+      )}
 
       {/* Sidebar */}
       <div
