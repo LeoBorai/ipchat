@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Users, MessageSquare, Plus, User, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Users, MessageSquare, Plus, User, RefreshCw, PanelLeft } from "lucide-react";
 
 import { useChatWebSocket } from "../../contexts/ChatWebSocketContext";
 import { useNode } from "../../contexts/NodeContext";
@@ -11,7 +11,18 @@ interface SidebarProps {
 export function Sidebar({ username }: SidebarProps) {
   const [newRoomName, setNewRoomName] = useState("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const { serverUrl } = useNode();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsOpen(window.innerWidth >= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const {
     isConnected,
     connectionStatus,
@@ -32,7 +43,22 @@ export function Sidebar({ username }: SidebarProps) {
   };
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <>
+      {/* Toggle Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition"
+        title={isOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        <PanelLeft className={`w-5 h-5 transition-transform ${isOpen ? "rotate-0" : "rotate-180"}`} />
+      </button>
+
+      {/* Sidebar */}
+      <div
+        className={`w-80 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } fixed md:relative h-full z-40`}
+      >
       {/* User Info */}
       <div className="p-4 border-b border-gray-200 bg-indigo-50">
         <div className="flex items-center justify-between mb-2">
@@ -162,6 +188,15 @@ export function Sidebar({ username }: SidebarProps) {
           )}
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </>
   );
 }
