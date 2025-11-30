@@ -198,9 +198,9 @@ export function Sidebar({ username }: SidebarProps) {
           tabIndex={0}
           aria-label="Close sidebar overlay"
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={closeSidebar}
           onKeyDown={(e) => {
-            if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+            if (e.key === "Escape") {
               closeSidebar();
             }
           }}
