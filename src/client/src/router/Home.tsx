@@ -19,7 +19,7 @@ export function Home() {
   };
 
   if (!isSetup) {
-    return <SignInForm onSubmit={handleSetup} initialServerUrl={serverUrl} />;
+    return <SignInForm onSubmit={handleSetup} />;
   }
 
   return (
