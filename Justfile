@@ -23,3 +23,7 @@ dev:
 # Starts the server for Development
 run: build
 	./target/debug/ipchat start
+
+# Stops the development container
+undev:
+	docker compose -f dev/docker-compose.dev.yml down
