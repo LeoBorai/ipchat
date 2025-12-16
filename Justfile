@@ -16,6 +16,11 @@ build-client:
 build-server:
 	cargo b
 
+# Run clippy and format the code
+clippy:
+	cargo clippy --workspace --fix --allow-dirty --allow-staged
+	cargo fmt --all
+
 # Starts the development container
 dev:
 	docker compose -f dev/docker-compose.dev.yml up --build --detach
@@ -23,6 +28,10 @@ dev:
 # Starts the server for Development
 run: build
 	./target/debug/ipchat start
+
+# Runs the Client UI for Development
+run-client:
+	cd ./src/ui && trunk serve
 
 # Stops the development container
 undev:
