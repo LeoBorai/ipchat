@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Room {
     pub id: String,
     pub name: String,
@@ -15,19 +15,19 @@ pub struct Peer {
 
 #[component]
 pub fn Sidebar(
-    username: String,
-    server_url: String,
-    is_sidebar_open: Signal<bool>,
+    #[prop(into)] username: Signal<String>,
+    #[prop(into)] server_url: Signal<String>,
+    #[prop(into)] is_sidebar_open: Signal<bool>,
+    #[prop(into)] is_connected: Signal<bool>,
+    #[prop(into)] connection_status: Signal<String>,
+    #[prop(into)] my_rooms: Signal<Vec<Room>>,
+    #[prop(into)] discovered_peers: Signal<Vec<Peer>>,
+    #[prop(into)] active_room: Signal<Option<Room>>,
     open_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     close_sidebar: impl Fn() + Clone + Send + Sync + 'static,
-    is_connected: Signal<bool>,
-    connection_status: Signal<String>,
-    my_rooms: Signal<Vec<Room>>,
-    discovered_peers: Signal<Vec<Peer>>,
-    active_room: Signal<Option<Room>>,
-    set_active_room: impl Fn(Room) + 'static + Copy,
-    request_peer_list: impl Fn() + 'static,
-    create_room: impl Fn(String) + 'static + Copy,
+    set_active_room: impl Fn(Room) + Clone + Send + Sync + 'static,
+    request_peer_list: impl Fn() + Clone + Send + Sync + 'static,
+    // create_room: impl Fn(String) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let (new_room_name, set_new_room_name) = signal(String::new());
     let (show_create_room, set_show_create_room) = signal(false);
@@ -35,7 +35,7 @@ pub fn Sidebar(
     let handle_create_room = move || {
         let room_name = new_room_name.get();
         if !room_name.trim().is_empty() {
-            create_room(room_name);
+            // create_room(room_name);
             set_new_room_name.set(String::new());
             set_show_create_room.set(false);
         }
@@ -200,80 +200,80 @@ pub fn Sidebar(
                             </button>
                         </div>
 
-                        {move || {
-                            show_create_room
-                                .get()
-                                .then(|| {
-                                    view! {
-                                        <div class="mb-3 flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Room name"
-                                                prop:value=new_room_name
-                                                on:input=move |ev| {
-                                                    set_new_room_name.set(event_target_value(&ev));
-                                                }
+                        // {move || {
+                        //     show_create_room
+                        //         .get()
+                        //         .then(|| {
+                        //             view! {
+                        //                 <div class="mb-3 flex gap-2">
+                        //                     <input
+                        //                         type="text"
+                        //                         placeholder="Room name"
+                        //                         prop:value=new_room_name
+                        //                         on:input=move |ev| {
+                        //                             set_new_room_name.set(event_target_value(&ev));
+                        //                         }
 
-                                                on:keypress=move |ev| {
-                                                    if ev.key() == "Enter" {
-                                                        handle_create_room();
-                                                    }
-                                                }
+                        //                         on:keypress=move |ev| {
+                        //                             if ev.key() == "Enter" {
+                        //                                 handle_create_room();
+                        //                             }
+                        //                         }
 
-                                                class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                            />
-                                            <button
-                                                on:click=move |_| handle_create_room()
-                                                class="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
-                                            >
-                                                "Add"
-                                            </button>
-                                        </div>
-                                    }
-                                })
-                        }}
+                        //                         class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        //                     />
+                        //                     <button
+                        //                         on:click=move |_| handle_create_room()
+                        //                         class="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                        //                     >
+                        //                         "Add"
+                        //                     </button>
+                        //                 </div>
+                        //             }
+                        //         })
+                        // }}
 
-                        {move || {
-                            let rooms = my_rooms.get();
-                            if rooms.is_empty() {
-                                view! {
-                                    <p class="text-sm text-gray-500">"No rooms yet. Create one!"</p>
-                                }
-                                    .into_any()
-                            } else {
-                                rooms
-                                    .into_iter()
-                                    .map(|room| {
-                                        let room_clone = room.clone();
-                                        let active = active_room.get();
-                                        let is_active = active
-                                            .as_ref()
-                                            .map(|r| r.id == room.id)
-                                            .unwrap_or(false);
-                                        view! {
-                                            <button
-                                                on:click=move |_| set_active_room(room_clone.clone())
-                                                class=format!(
-                                                    "w-full text-left p-3 rounded-lg mb-2 transition {}",
-                                                    if is_active {
-                                                        "bg-indigo-100 border border-indigo-300"
-                                                    } else {
-                                                        "hover:bg-gray-50 border border-transparent"
-                                                    },
-                                                )
-                                            >
+                        // {move || {
+                        //     let rooms = my_rooms.get();
+                        //     if rooms.is_empty() {
+                        //         view! {
+                        //             <p class="text-sm text-gray-500">"No rooms yet. Create one!"</p>
+                        //         }
+                        //             .into_any()
+                        //     } else {
+                        //         rooms
+                        //             .into_iter()
+                        //             .map(|room| {
+                        //                 let room_clone = room.clone();
+                        //                 let active = active_room.get();
+                        //                 let is_active = active
+                        //                     .as_ref()
+                        //                     .map(|r| r.id == room.id)
+                        //                     .unwrap_or(false);
+                        //                 view! {
+                        //                     <button
+                        //                         on:click=move |_| set_active_room(room_clone.clone())
+                        //                         class=format!(
+                        //                             "w-full text-left p-3 rounded-lg mb-2 transition {}",
+                        //                             if is_active {
+                        //                                 "bg-indigo-100 border border-indigo-300"
+                        //                             } else {
+                        //                                 "hover:bg-gray-50 border border-transparent"
+                        //                             },
+                        //                         )
+                        //                     >
 
-                                                <p class="font-medium text-gray-800">{room.name.clone()}</p>
-                                                <p class="text-xs text-gray-500">
-                                                    {format!("{} participant(s)", room.participants.len())}
-                                                </p>
-                                            </button>
-                                        }
-                                    })
-                                    .collect_view()
-                                    .into_any()
-                            }
-                        }}
+                        //                         <p class="font-medium text-gray-800">{room.name.clone()}</p>
+                        //                         <p class="text-xs text-gray-500">
+                        //                             {format!("{} participant(s)", room.participants.len())}
+                        //                         </p>
+                        //                     </button>
+                        //                 }
+                        //             })
+                        //             .collect_view()
+                        //             .into_any()
+                        //     }
+                        // }}
 
                     </div>
 
@@ -344,27 +344,27 @@ pub fn Sidebar(
             </div>
 
             {/* Overlay for mobile */}
-            {move || {
-                is_sidebar_open
-                    .get()
-                    .then(|| {
-                        view! {
-                            <div
-                                role="button"
-                                tabindex="0"
-                                aria-label="Close sidebar overlay"
-                                class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-                                on:click=move |_| close_sidebar()
-                                on:keydown=move |ev| {
-                                    if ev.key() == "Escape" {
-                                        close_sidebar();
-                                    }
-                                }
-                            >
-                            </div>
-                        }
-                    })
-            }}
+            // {move || {
+            //     is_sidebar_open
+            //         .get()
+            //         .then(|| {
+            //             view! {
+            //                 <div
+            //                     role="button"
+            //                     tabindex="0"
+            //                     aria-label="Close sidebar overlay"
+            //                     class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+            //                     on:click=move |_| close_sidebar()
+            //                     on:keydown=move |ev| {
+            //                         if ev.key() == "Escape" {
+            //                             close_sidebar();
+            //                         }
+            //                     }
+            //                 >
+            //                 </div>
+            //             }
+            //         })
+            // }}
 
         </>
     }
