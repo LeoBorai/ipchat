@@ -55,7 +55,7 @@ pub fn Chat() -> impl IntoView {
                 discovered_peers={discovered_peers.read_only()}
                 active_room={active_room.read_only()}
                 request_peer_list={request_peer_list}
-                // create_room={set_active_room}
+                create_room={create_room}
             />
             <ChatArea
                 username={username.read_only()}

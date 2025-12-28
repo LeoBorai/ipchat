@@ -27,7 +27,7 @@ pub fn Sidebar(
     close_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     set_active_room: impl Fn(Room) + Clone + Send + Sync + 'static,
     request_peer_list: impl Fn() + Clone + Send + Sync + 'static,
-    // create_room: impl Fn(String) + Clone + Send + Sync + 'static,
+    create_room: impl Fn(String) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let (new_room_name, set_new_room_name) = signal(String::new());
     let (show_create_room, set_show_create_room) = signal(false);
@@ -35,7 +35,7 @@ pub fn Sidebar(
     let handle_create_room = move || {
         let room_name = new_room_name.get();
         if !room_name.trim().is_empty() {
-            // create_room(room_name);
+            create_room(room_name);
             set_new_room_name.set(String::new());
             set_show_create_room.set(false);
         }
