@@ -1,3 +1,4 @@
+use leptos::logging::error;
 use leptos::prelude::*;
 
 use crate::components::molecules::{Room, Sidebar};
@@ -43,7 +44,10 @@ pub fn Chat() -> impl IntoView {
         let Some(server_url) = use_server_url().get() else {
             return;
         };
-        use_chat_ws().connect(server_url);
+
+        if let Err(err) = use_chat_ws().connect(server_url) {
+            error!("Failed to connect to chat WebSocket: {:?}", err);
+        }
     });
 
     view! {

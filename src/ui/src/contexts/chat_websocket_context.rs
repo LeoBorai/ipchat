@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::Result;
 use chrono::Utc;
 use leptos::logging::error;
 use leptos::prelude::{RwSignal, Set, Update};
@@ -131,7 +132,7 @@ impl ChatWebSocketContext {
         }
     }
 
-    pub fn connect(&self, server_url: String) {
+    pub fn connect(&self, server_url: String) -> Result<()> {
         let ctx = self.clone();
         let mut chat_web_socket_service = ChatWebSocketService::get();
         chat_web_socket_service.set_server_url(server_url);
@@ -148,16 +149,20 @@ impl ChatWebSocketContext {
                 ctx.handle_server_message(message);
             },
             {
-                let ws_service_clone = chat_web_socket_service.clone();
-                move || {
-                    ws_service_clone.list_nodes();
-                    ws_service_clone.list_rooms();
+                move |ws_service| {
+                    let ws_service = ws_service.clone();
+                    leptos::task::spawn_local(async move {
+                        ws_service.list_nodes().await;
+                        ws_service.list_rooms().await;
+                    });
                 }
             },
-        );
+        )?;
 
         // Set up peer list polling when connected
         self.setup_peer_list_polling();
+
+        Ok(())
     }
 
     fn setup_peer_list_polling(&self) {

@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Result, bail};
+use futures::stream::SplitSink;
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::Message;
 use gloo_net::websocket::futures::WebSocket;
@@ -99,7 +100,7 @@ where
 
 #[derive(Clone)]
 pub struct ChatWebSocketService {
-    ws: Option<Arc<Mutex<WebSocket>>>,
+    ws: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
     server_url: Option<String>,
     reconnect_delay: Duration,
     should_reconnect: bool,
@@ -151,13 +152,14 @@ impl ChatWebSocketService {
         on_connection_change: F1,
         on_message: F2,
         on_initial_connect: F3,
-    ) where
+    ) -> Result<()>
+    where
         F1: Fn(bool, ConnectionStatus) + Clone + 'static,
         F2: Fn(ServerMessage) + Clone + 'static,
-        F3: Fn() + Clone + 'static,
+        F3: Fn(&mut Self) + Clone + 'static,
     {
         self.should_reconnect = true;
-        self.create_connection(on_connection_change, on_message, on_initial_connect);
+        self.create_connection(on_connection_change, on_message, on_initial_connect)
     }
 
     fn create_connection<F1, F2, F3>(
@@ -169,7 +171,7 @@ impl ChatWebSocketService {
     where
         F1: Fn(bool, ConnectionStatus) + Clone + 'static,
         F2: Fn(ServerMessage) + Clone + 'static,
-        F3: Fn() + Clone + 'static,
+        F3: Fn(&mut Self) + Clone + 'static,
     {
         let Some(server_url) = &self.server_url else {
             bail!("Server URL is not set");
@@ -181,17 +183,18 @@ impl ChatWebSocketService {
 
         match WebSocket::open(&server_url) {
             Ok(ws) => {
-                log!("Connected to server");
-                on_connection_change(true, ConnectionStatus::Connected);
-                on_initial_connect();
+                let (ws, mut receiver) = ws.split();
 
+                self.ws = Some(Arc::new(Mutex::new(ws)));
                 self.is_connected = true;
 
-                let (_, mut receiver) = ws.split();
                 let should_reconnect = self.should_reconnect;
                 let reconnect_delay = self.reconnect_delay;
                 let on_connection_change_clone = on_connection_change.clone();
                 let on_message_clone = on_message.clone();
+
+                on_connection_change(true, ConnectionStatus::Connected);
+                on_initial_connect(self);
 
                 leptos::task::spawn_local(async move {
                     while let Some(msg) = receiver.next().await {
@@ -243,11 +246,14 @@ impl ChatWebSocketService {
         self.is_connected = false;
     }
 
-    pub fn send(&self, message: &impl Serialize) {
+    pub async fn send(&self, message: &impl Serialize) {
+        log!("Sending");
         if let Some(ws) = &self.ws {
             let mut ws = ws.lock().unwrap(); // remove unwrap in production code
             if let Ok(json) = serde_json::to_string(message) {
-                ws.send(Message::Text(json));
+                if let Err(err) = ws.send(Message::Text(json)).await {
+                    error!("Failed to send message. {:?}", err);
+                }
             }
         } else {
             error!("WebSocket is not connected");
@@ -258,27 +264,27 @@ impl ChatWebSocketService {
         self.is_connected
     }
 
-    pub fn list_nodes(&self) {
+    pub async fn list_nodes(&self) {
         #[derive(Serialize)]
         struct ListNodesMessage {
             r#type: String,
         }
         self.send(&ListNodesMessage {
             r#type: "ListNodes".to_string(),
-        });
+        }).await;
     }
 
-    pub fn list_rooms(&self) {
+    pub async fn list_rooms(&self) {
         #[derive(Serialize)]
         struct ListRoomsMessage {
             r#type: String,
         }
         self.send(&ListRoomsMessage {
             r#type: "ListRooms".to_string(),
-        });
+        }).await;
     }
 
-    pub fn create_room(&self, name: String) {
+    pub async fn create_room(&self, name: String) {
         #[derive(Serialize)]
         struct CreateRoomMessage {
             r#type: String,
@@ -287,10 +293,10 @@ impl ChatWebSocketService {
         self.send(&CreateRoomMessage {
             r#type: "CreateRoom".to_string(),
             name,
-        });
+        }).await;
     }
 
-    pub fn join_room(&self, room_id: String, peer_ip: String) {
+    pub async fn join_room(&self, room_id: String, peer_ip: String) {
         #[derive(Serialize)]
         struct JoinRoomMessage {
             r#type: String,
@@ -301,10 +307,10 @@ impl ChatWebSocketService {
             r#type: "JoinRoom".to_string(),
             room_id,
             peer_ip,
-        });
+        }).await;
     }
 
-    pub fn send_message(&self, room_id: String, content: String, sender: String) {
+    pub async fn send_message(&self, room_id: String, content: String, sender: String) {
         #[derive(Serialize)]
         struct SendMessageMessage {
             r#type: String,
@@ -317,6 +323,6 @@ impl ChatWebSocketService {
             room_id,
             content,
             sender,
-        });
+        }).await;
     }
 }
