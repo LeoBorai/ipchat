@@ -1,5 +1,8 @@
 mod components;
+mod contexts;
+mod hooks;
 mod pages;
+mod services;
 
 use leptos::prelude::*;
 use leptos_meta::*;
