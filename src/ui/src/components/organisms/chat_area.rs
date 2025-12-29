@@ -1,26 +1,20 @@
 use leptos::prelude::*;
-use std::collections::HashMap;
 use web_sys::js_sys;
 
 use crate::components::molecules::Room;
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Message {
-    pub sender: String,
-    pub content: String,
-    pub timestamp: String,
-}
+use crate::contexts::chat_websocket_context::Message;
+use crate::hooks::chat_websocket::{use_is_connected, use_messages};
 
 #[component]
 pub fn ChatArea(
     #[prop(into)] username: Signal<String>,
-    #[prop(into)] is_connected: Signal<bool>,
     #[prop(into)] active_room: Signal<Option<Room>>,
-    #[prop(into)] messages: Signal<HashMap<String, Vec<Message>>>,
     send_message: impl Fn(String, String, String) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let (new_message, set_new_message) = signal(String::new());
     let username_clone = username.clone();
+    let messages = use_messages();
+    let is_connected = use_is_connected();
     let handle_send_message = move || {
         let message_text = new_message.get();
         if !message_text.trim().is_empty() {

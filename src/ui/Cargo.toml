@@ -3,7 +3,14 @@ name = "ipchat-ui"
 version = "0.0.0"
 edition = "2024"
 
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
+
 [dependencies]
+chrono = { workspace = true, features = ["serde"] }
 console_error_panic_hook = { workspace = true }
 console_log = { workspace = true }
 futures = { workspace = true }
@@ -18,11 +25,7 @@ serde_json = { workspace = true }
 wasm-bindgen = { workspace = true }
 web-sys = { workspace = true, features = ["Document", "Window"] }
 
+ipchat-client = { workspace = true }
+
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }
-
-[profile.release]
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = "abort"

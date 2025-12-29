@@ -3,7 +3,7 @@ use http::{Uri, header};
 use rust_embed::Embed;
 
 #[derive(Embed)]
-#[folder = "../client/dist"]
+#[folder = "../ui/dist"]
 struct Asset;
 
 pub struct StaticFile<T>(pub T);

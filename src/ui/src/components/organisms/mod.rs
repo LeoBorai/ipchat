@@ -1,3 +1,3 @@
 mod chat_area;
 
-pub use chat_area::{ChatArea, Message};
+pub use chat_area::ChatArea;

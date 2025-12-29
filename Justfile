@@ -25,6 +25,10 @@ clippy:
 dev:
 	docker compose -f dev/docker-compose.dev.yml up --build --detach
 
+# Generates the OpenAPI specification file
+gen-openapi:
+	curl http://localhost:4724/api-docs/openapi.json > ./src/client/assets/openapi.json
+
 # Starts the server for Development
 run: build
 	./target/debug/ipchat start

@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 
+use crate::hooks::{chat_websocket::use_connection_status, node::use_server_url};
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Room {
     pub id: String,
@@ -16,10 +18,8 @@ pub struct Peer {
 #[component]
 pub fn Sidebar(
     #[prop(into)] username: Signal<String>,
-    #[prop(into)] server_url: Signal<String>,
     #[prop(into)] is_sidebar_open: Signal<bool>,
     #[prop(into)] is_connected: Signal<bool>,
-    #[prop(into)] connection_status: Signal<String>,
     #[prop(into)] my_rooms: Signal<Vec<Room>>,
     #[prop(into)] discovered_peers: Signal<Vec<Peer>>,
     #[prop(into)] active_room: Signal<Option<Room>>,
@@ -31,6 +31,8 @@ pub fn Sidebar(
 ) -> impl IntoView {
     let (new_room_name, set_new_room_name) = signal(String::new());
     let (show_create_room, set_show_create_room) = signal(false);
+    let server_url = use_server_url();
+    let connection_status = use_connection_status();
 
     let handle_create_room = move || {
         let room_name = new_room_name.get();
@@ -153,7 +155,7 @@ pub fn Sidebar(
                             )
                         }></div>
 
-                        <p class="text-xs text-gray-600">{move || connection_status.get()}</p>
+                        <p class="text-xs text-gray-600">{move || format!("{}", connection_status.get()) }</p>
                     </div>
                 </div>
 

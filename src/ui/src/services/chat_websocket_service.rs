@@ -199,16 +199,8 @@ impl ChatWebSocketService {
                     if should_reconnect {
                         on_connection_change_clone(false, ConnectionStatus::Reconnecting);
                         TimeoutFuture::new(reconnect_delay.as_millis() as u32).await;
-
-                        // Reconnect logic would go here
-                        // Note: In a real implementation, you'd need to pass the service
-                        // reference to call create_connection again
                     }
                 });
-
-                // Store the WebSocket (we'd need the write half for sending)
-                // This is a simplified version - in practice you might want to store
-                // the write half separately for sending messages
             }
             Err(e) => {
                 error!("Failed to connect: {:?}", e);
