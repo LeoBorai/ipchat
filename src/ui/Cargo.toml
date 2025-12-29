@@ -23,6 +23,7 @@ leptos_router = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+uuid = { workspace = true, features = ["js", "v4"] }
 wasm-bindgen = { workspace = true }
 web-sys = { workspace = true, features = ["Document", "Window"] }
 

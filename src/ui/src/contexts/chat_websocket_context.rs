@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use chrono::Utc;
-use leptos::logging::error;
+use gloo_timers::callback::Interval;
+use gloo_timers::future::TimeoutFuture;
+use leptos::logging::{error, log};
 use leptos::prelude::{RwSignal, Set, Update};
 use serde::{Deserialize, Serialize};
 
@@ -134,13 +136,15 @@ impl ChatWebSocketContext {
 
     pub fn connect(&self, server_url: String) -> Result<()> {
         let ctx = self.clone();
-        let mut chat_web_socket_service = ChatWebSocketService::get();
-        chat_web_socket_service.set_server_url(server_url);
+        let chat_web_socket_service = ChatWebSocketService::get();
+        chat_web_socket_service
+            .borrow_mut()
+            .set_server_url(server_url);
 
         let is_connected = self.is_connected;
         let connection_status = self.connection_status;
 
-        chat_web_socket_service.connect(
+        chat_web_socket_service.borrow_mut().connect(
             move |connected, status| {
                 is_connected.set(connected);
                 connection_status.set(status);
@@ -151,6 +155,7 @@ impl ChatWebSocketContext {
             {
                 move |ws_service| {
                     let ws_service = ws_service.clone();
+                    log!("on initial: {:?}", ws_service);
                     leptos::task::spawn_local(async move {
                         ws_service.list_nodes().await;
                         ws_service.list_rooms().await;
@@ -159,38 +164,36 @@ impl ChatWebSocketContext {
             },
         )?;
 
-        // Set up peer list polling when connected
         self.setup_peer_list_polling();
 
         Ok(())
     }
 
     fn setup_peer_list_polling(&self) {
-        // let is_connected = self.is_connected;
-        // let ws_service = self.ws_service;
+        log!("Init Polling");
+        leptos::task::spawn_local(async move {
+            loop {
+                TimeoutFuture::new(1000).await;
 
-        // leptos::task::spawn_local(async move {
-        //     loop {
-        //         gloo_timers::future::TimeoutFuture::new(100).await;
+                let ws_service = ChatWebSocketService::get();
+                log!("Sttatus: {:?}", ws_service);
+                if ws_service.borrow().is_connected() {
+                    log!("Starting Polling Interval");
+                    let interval = Interval::new(1000, move || {
+                        let ws_service = ChatWebSocketService::get();
+                        leptos::task::spawn_local(async move {
+                            log!("Polling Peer List");
+                            ws_service.borrow_mut().list_nodes().await;
+                        });
+                    });
 
-        //         if is_connected.get() {
-        //             // Clear any existing interval
-        //             if let Some(service) = ws_service.get_value() {
-        //                 // Set up 5-second interval for peer list requests
-        //                 let interval = Interval::new(5000, move || {
-        //                     if let Some(service) = ws_service.get_value() {
-        //                         service.list_nodes();
-        //                     }
-        //                 });
+                    // do not drop it (yet)
+                    std::mem::forget(interval);
 
-        //                 // Note: In a real implementation, you'd want to store and manage
-        //                 // the interval to clean it up when disconnecting
-        //                 std::mem::forget(interval);
-        //             }
-        //             break;
-        //         }
-        //     }
-        // });
+                    break;
+                }
+            }
+        });
     }
 
     pub fn disconnect(&self) {

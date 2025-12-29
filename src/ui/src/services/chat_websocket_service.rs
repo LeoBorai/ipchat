@@ -1,4 +1,5 @@
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -11,8 +12,9 @@ use gloo_timers::future::TimeoutFuture;
 use leptos::logging::{error, log};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
 
-thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: RefCell<ChatWebSocketService> = RefCell::new(ChatWebSocketService::default()));
+thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: Rc<RefCell<ChatWebSocketService>> = Rc::new(RefCell::new(ChatWebSocketService::default())));
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -61,59 +63,24 @@ where
     pub on_initial_connect: Option<F3>,
 }
 
-impl<F1, F2, F3> ChatWebSocketConfig<F1, F2, F3>
-where
-    F1: Fn(bool, ConnectionStatus) + 'static,
-    F2: Fn(ServerMessage) + 'static,
-    F3: Fn() + 'static,
-{
-    pub fn new(server_url: String) -> Self {
-        Self {
-            server_url,
-            reconnect_delay: Duration::from_millis(3000),
-            on_connection_change: None,
-            on_message: None,
-            on_initial_connect: None,
-        }
-    }
-
-    pub fn with_reconnect_delay(mut self, delay: Duration) -> Self {
-        self.reconnect_delay = delay;
-        self
-    }
-
-    pub fn with_connection_change(mut self, callback: F1) -> Self {
-        self.on_connection_change = Some(callback);
-        self
-    }
-
-    pub fn with_message(mut self, callback: F2) -> Self {
-        self.on_message = Some(callback);
-        self
-    }
-
-    pub fn with_initial_connect(mut self, callback: F3) -> Self {
-        self.on_initial_connect = Some(callback);
-        self
-    }
-}
-
 #[derive(Clone)]
 pub struct ChatWebSocketService {
+    id: Uuid,
     ws: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
     server_url: Option<String>,
+    is_connected: bool,
     reconnect_delay: Duration,
     should_reconnect: bool,
-    is_connected: bool,
 }
 
 impl std::fmt::Debug for ChatWebSocketService {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ChatWebSocketService")
+            .field("id", &self.id.to_string())
             .field("server_url", &self.server_url)
+            .field("is_connected", &self.is_connected)
             .field("reconnect_delay", &self.reconnect_delay)
             .field("should_reconnect", &self.should_reconnect)
-            .field("is_connected", &self.is_connected)
             .finish()
     }
 }
@@ -121,18 +88,19 @@ impl std::fmt::Debug for ChatWebSocketService {
 impl Default for ChatWebSocketService {
     fn default() -> Self {
         Self {
+            id: Uuid::new_v4(),
             ws: None,
             server_url: None,
+            is_connected: false,
             reconnect_delay: Duration::from_millis(3000),
             should_reconnect: false,
-            is_connected: false,
         }
     }
 }
 
 impl ChatWebSocketService {
-    pub fn get() -> ChatWebSocketService {
-        CHAT_WEB_SOCKET_SERVICE.with(|service| service.borrow().clone())
+    pub fn get() -> Rc<RefCell<ChatWebSocketService>> {
+        CHAT_WEB_SOCKET_SERVICE.with(|service| Rc::clone(&service))
     }
 
     pub fn set_server_url(&mut self, server_url: String) {
@@ -271,7 +239,8 @@ impl ChatWebSocketService {
         }
         self.send(&ListNodesMessage {
             r#type: "ListNodes".to_string(),
-        }).await;
+        })
+        .await;
     }
 
     pub async fn list_rooms(&self) {
@@ -281,7 +250,8 @@ impl ChatWebSocketService {
         }
         self.send(&ListRoomsMessage {
             r#type: "ListRooms".to_string(),
-        }).await;
+        })
+        .await;
     }
 
     pub async fn create_room(&self, name: String) {
@@ -293,7 +263,8 @@ impl ChatWebSocketService {
         self.send(&CreateRoomMessage {
             r#type: "CreateRoom".to_string(),
             name,
-        }).await;
+        })
+        .await;
     }
 
     pub async fn join_room(&self, room_id: String, peer_ip: String) {
@@ -307,7 +278,8 @@ impl ChatWebSocketService {
             r#type: "JoinRoom".to_string(),
             room_id,
             peer_ip,
-        }).await;
+        })
+        .await;
     }
 
     pub async fn send_message(&self, room_id: String, content: String, sender: String) {
@@ -323,6 +295,7 @@ impl ChatWebSocketService {
             room_id,
             content,
             sender,
-        }).await;
+        })
+        .await;
     }
 }
