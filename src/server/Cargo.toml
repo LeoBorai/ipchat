@@ -16,25 +16,49 @@ path = "src/lib.rs"
 name = "ipchat"
 path = "src/bin/main.rs"
 
+[features]
+default = ["server"]
+server = [
+    "dep:axum",
+    "dep:clap",
+    "dep:futures-util",
+    "dep:http",
+    "dep:if-addrs",
+    "dep:local-ip-address",
+    "dep:mime_guess",
+    "dep:rust-embed",
+    "dep:socket2",
+    "dep:tokio",
+    "dep:tokio-tungstenite",
+    "dep:tower-http",
+    "dep:tracing",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "dep:utoipa",
+    "dep:utoipa-swagger-ui"
+]
+
 [dependencies]
-axum = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-clap = { workspace = true, features = ["std", "derive", "env"] }
-futures-util = { workspace = true }
-http = { workspace = true }
-if-addrs = { workspace = true }
-local-ip-address = { workspace = true }
-mime_guess = { workspace = true }
-rust-embed = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-socket2 = { workspace = true }
-tokio = { workspace = true, features = ["fs", "macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
-tokio-tungstenite = { workspace = true }
-tower-http = { workspace = true, features = ["cors", "trace"] }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
-tracing = { workspace = true }
-utoipa = { workspace = true, features = ["chrono", "macros", "uuid"] }
-utoipa-swagger-ui = { workspace = true, features = ["axum"] }
 uuid = { workspace = true, features = ["serde", "v4"] }
+
+# Optional dependencies
+axum = { workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["std", "derive", "env"] }
+futures-util = { workspace = true, optional = true }
+http = { workspace = true, optional = true }
+if-addrs = { workspace = true, optional = true }
+local-ip-address = { workspace = true, optional = true }
+mime_guess = { workspace = true, optional = true }
+rust-embed = { workspace = true, optional = true }
+socket2 = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true, features = ["fs", "macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-tungstenite = { workspace = true, optional = true }
+tower-http = { workspace = true, optional = true, features = ["cors", "trace"] }
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true, features = ["env-filter"] }
+utoipa = { workspace = true, optional = true, features = ["chrono", "macros", "uuid"] }
+utoipa-swagger-ui = { workspace = true, optional = true, features = ["axum"] }

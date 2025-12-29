@@ -1,7 +1,9 @@
 use leptos::logging::error;
 use leptos::prelude::*;
 
-use crate::components::molecules::{Room, Sidebar};
+use ipchat::proto::Room;
+
+use crate::components::molecules::Sidebar;
 use crate::components::organisms::ChatArea;
 use crate::hooks::chat_websocket::use_chat_ws;
 use crate::hooks::node::use_server_url;

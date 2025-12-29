@@ -1270,6 +1270,7 @@ dependencies = [
  "futures",
  "gloo-net",
  "gloo-timers",
+ "ipchat",
  "ipchat-client",
  "leptos",
  "leptos_meta",

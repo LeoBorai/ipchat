@@ -1,3 +1,3 @@
 mod sidebar;
 
-pub use sidebar::{Peer, Room, Sidebar};
+pub use sidebar::Sidebar;

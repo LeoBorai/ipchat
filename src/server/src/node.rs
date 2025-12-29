@@ -3,22 +3,14 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 
-use crate::chat::{Room, ServerMessage};
 use crate::discovery::DiscoveryService;
-use crate::peer::PeerRoom;
+use crate::proto::{NodeInfo, PeerRoom, Room, ServerMessage};
 
 pub type ArcNode = Arc<RwLock<Node>>;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NodeInfo {
-    pub ip: IpAddr,
-    pub rooms: Vec<PeerRoom>,
-}
 
 pub struct Node {
     pub ip: Ipv4Addr,

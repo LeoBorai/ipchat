@@ -1,11 +1,20 @@
-pub mod chat;
+#[cfg(feature = "server")]
 pub mod discovery;
+#[cfg(feature = "server")]
 pub mod domain;
+#[cfg(feature = "server")]
 pub mod graceful_shutdown;
+#[cfg(feature = "server")]
 pub mod node;
-pub mod peer;
+#[cfg(feature = "server")]
 pub mod server;
+#[cfg(feature = "server")]
 pub mod services;
+#[cfg(feature = "server")]
 pub mod setup;
+#[cfg(feature = "server")]
 pub mod util;
+#[cfg(feature = "server")]
 pub mod ws;
+
+pub mod proto;

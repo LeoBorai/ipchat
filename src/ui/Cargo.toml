@@ -27,6 +27,7 @@ uuid = { workspace = true, features = ["js", "v4"] }
 wasm-bindgen = { workspace = true }
 web-sys = { workspace = true, features = ["Document", "Window"] }
 
+ipchat = { workspace = true, default-features = false }
 ipchat-client = { workspace = true }
 
 [dev-dependencies]

@@ -12,8 +12,8 @@ use tokio_tungstenite::tungstenite::Message;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-use crate::chat::{ChatMessage, ClientMessage, Room, ServerMessage};
-use crate::node::{ArcNode, NodeInfo};
+use crate::node::ArcNode;
+use crate::proto::{ChatMessage, ClientMessage, NodeInfo, Room, ServerMessage};
 
 /// Service in charge of handling WebSocket connections for real-time chat communication
 pub struct WebSocket {

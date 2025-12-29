@@ -1,19 +1,8 @@
 use leptos::prelude::*;
 
+use ipchat::proto::{PeerRoom, Room};
+
 use crate::hooks::{chat_websocket::use_connection_status, node::use_server_url};
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Room {
-    pub id: String,
-    pub name: String,
-    pub participants: Vec<String>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Peer {
-    pub ip: String,
-    pub username: String,
-}
 
 #[component]
 pub fn Sidebar(
@@ -21,7 +10,7 @@ pub fn Sidebar(
     #[prop(into)] is_sidebar_open: Signal<bool>,
     #[prop(into)] is_connected: Signal<bool>,
     #[prop(into)] my_rooms: Signal<Vec<Room>>,
-    #[prop(into)] discovered_peers: Signal<Vec<Peer>>,
+    #[prop(into)] discovered_peers: Signal<Vec<PeerRoom>>,
     #[prop(into)] active_room: Signal<Option<Room>>,
     open_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     close_sidebar: impl Fn() + Clone + Send + Sync + 'static,
@@ -327,7 +316,7 @@ pub fn Sidebar(
                                                 <div class="flex items-center gap-2 mb-2">
                                                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                                                     <p class="font-medium text-sm text-gray-800">
-                                                        {peer.username.clone()}
+                                                        {peer.name.clone()}
                                                     </p>
                                                 </div>
                                                 <p class="text-xs text-gray-500 font-mono mb-2">

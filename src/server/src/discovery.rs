@@ -8,7 +8,8 @@ use tokio::net::UdpSocket;
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
-use crate::node::{ArcNode, NodeInfo};
+use crate::node::ArcNode;
+use crate::proto::NodeInfo;
 
 const BROADCAST_INTERVAL_SECS: u64 = 5;
 const DISCOVERY_PORT: u16 = 9001;

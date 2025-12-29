@@ -5,7 +5,18 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::node::NodeInfo;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerRoom {
+    pub id: Uuid,
+    pub ip: IpAddr,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NodeInfo {
+    pub ip: IpAddr,
+    pub rooms: Vec<PeerRoom>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {

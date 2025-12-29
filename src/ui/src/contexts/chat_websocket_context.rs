@@ -6,47 +6,20 @@ use gloo_timers::callback::Interval;
 use gloo_timers::future::TimeoutFuture;
 use leptos::logging::{error, log};
 use leptos::prelude::{RwSignal, Set, Update};
-use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::services::chat_websocket_service::{
-    ChatWebSocketService, ConnectionStatus, ServerMessage,
-};
+use ipchat::proto::{ChatMessage, PeerRoom, Room, ServerMessage};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Room {
-    pub id: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub host: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub participants: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Peer {
-    pub ip: String,
-    pub username: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rooms: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Message {
-    pub sender: String,
-    pub content: String,
-    pub timestamp: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub room_id: Option<String>,
-}
+use crate::services::chat_websocket_service::{ChatWebSocketService, ConnectionStatus};
 
 #[derive(Clone, Debug)]
 pub struct ChatWebSocketContext {
     pub is_connected: RwSignal<bool>,
     pub connection_status: RwSignal<ConnectionStatus>,
     pub my_rooms: RwSignal<Vec<Room>>,
-    pub discovered_peers: RwSignal<Vec<Peer>>,
+    pub discovered_peers: RwSignal<Vec<PeerRoom>>,
     pub active_room: RwSignal<Option<Room>>,
-    pub messages: RwSignal<HashMap<String, Vec<Message>>>,
+    pub messages: RwSignal<HashMap<Uuid, Vec<ChatMessage>>>,
     // peer_list_interval: StoredValue<Option<Interval>>,
 }
 
@@ -68,68 +41,46 @@ impl ChatWebSocketContext {
     fn handle_server_message(&self, message: ServerMessage) {
         match message {
             ServerMessage::RoomCreated { room } => {
-                if let Ok(room) = serde_json::from_value::<Room>(room) {
-                    self.my_rooms.update(|rooms| rooms.push(room.clone()));
-                    self.messages.update(|msgs| {
-                        msgs.insert(room.id.clone(), Vec::new());
-                    });
-                }
+                self.my_rooms.update(|rooms| rooms.push(room.clone()));
+                self.messages.update(|msgs| {
+                    msgs.insert(room.id.clone(), Vec::new());
+                });
             }
-
             ServerMessage::RoomJoined { room } => {
-                if let Ok(room) = serde_json::from_value::<Room>(room) {
-                    self.active_room.set(Some(room.clone()));
+                self.active_room.set(Some(room.clone()));
 
-                    self.messages.update(|msgs| {
-                        if !msgs.contains_key(&room.id) {
-                            let system_message = Message {
-                                sender: "System".to_string(),
-                                content: format!("You joined {}", room.name),
-                                timestamp: Utc::now().to_rfc3339(), // FIXME: this should come from server
-                                room_id: Some(room.id.clone()),
-                            };
-                            msgs.insert(room.id.clone(), vec![system_message]);
-                        }
-                    });
-                }
-            }
-
-            ServerMessage::NewMessage { message } => {
-                if let Ok(ref msg) = serde_json::from_value::<Message>(message) {
-                    if let Some(room_id) = &msg.room_id {
-                        self.messages.update(|msgs| {
-                            msgs.entry(room_id.clone())
-                                .or_insert_with(Vec::new)
-                                .push(msg.to_owned());
-                        });
+                self.messages.update(|msgs| {
+                    if !msgs.contains_key(&room.id) {
+                        let system_message = ChatMessage {
+                            sender: "System".to_string(),
+                            content: format!("You joined {}", room.name),
+                            timestamp: Utc::now(),
+                            room_id: room.id.clone(),
+                        };
+                        msgs.insert(room.id.clone(), vec![system_message]);
                     }
-                }
+                });
             }
-
-            ServerMessage::PeerList { peers } => {
-                if let Ok(peer_list) =
-                    serde_json::from_value::<Vec<Peer>>(serde_json::Value::Array(peers))
-                {
-                    self.discovered_peers.set(peer_list);
-                }
+            ServerMessage::NewMessage { message } => {
+                self.messages.update(|msgs| {
+                    msgs.entry(message.room_id)
+                        .or_insert_with(Vec::new)
+                        .push(message.to_owned());
+                });
             }
-
             ServerMessage::RoomList { rooms } => {
-                if let Ok(room_list) =
-                    serde_json::from_value::<Vec<Room>>(serde_json::Value::Array(rooms.clone()))
-                {
-                    self.my_rooms.set(room_list.clone());
-
-                    self.messages.update(|msgs| {
-                        for room in room_list {
-                            msgs.entry(room.id.clone()).or_insert_with(Vec::new);
-                        }
-                    });
-                }
+                self.my_rooms.set(rooms.clone());
+                self.messages.update(|msgs| {
+                    for room in rooms {
+                        msgs.entry(room.id.clone()).or_insert_with(Vec::new);
+                    }
+                });
             }
-
             ServerMessage::Error { message } => {
                 error!("Server error: {}", message);
+            }
+            _ => {
+                log!("Unhandled server message: {:?}", message);
             }
         }
     }

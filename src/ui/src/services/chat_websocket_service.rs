@@ -16,16 +16,7 @@ use uuid::Uuid;
 
 thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: Rc<RefCell<ChatWebSocketService>> = Rc::new(RefCell::new(ChatWebSocketService::default())));
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum ServerMessage {
-    RoomCreated { room: Value },
-    RoomJoined { room: Value },
-    NewMessage { message: Value },
-    PeerList { peers: Vec<Value> },
-    RoomList { rooms: Vec<Value> },
-    Error { message: String },
-}
+use ipchat::proto::ServerMessage;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ConnectionStatus {

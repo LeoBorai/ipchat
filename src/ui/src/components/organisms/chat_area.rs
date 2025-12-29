@@ -1,15 +1,16 @@
+use chrono::{DateTime, Utc};
 use leptos::prelude::*;
-use web_sys::js_sys;
+use uuid::Uuid;
 
-use crate::components::molecules::Room;
-use crate::contexts::chat_websocket_context::Message;
+use ipchat::proto::{ChatMessage, Room};
+
 use crate::hooks::chat_websocket::{use_is_connected, use_messages};
 
 #[component]
 pub fn ChatArea(
     #[prop(into)] username: Signal<String>,
     #[prop(into)] active_room: Signal<Option<Room>>,
-    send_message: impl Fn(String, String, String) + Clone + Send + Sync + 'static,
+    send_message: impl Fn(Uuid, String, String) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let (new_message, set_new_message) = signal(String::new());
     let username_clone = username.clone();
@@ -25,18 +26,10 @@ pub fn ChatArea(
         }
     };
 
-    let format_time = |timestamp: &str| -> String {
-        if let Ok(ts) = timestamp.parse::<i64>() {
-            let date = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(ts as f64));
-            let hours = date.get_hours();
-            let minutes = date.get_minutes();
-            format!("{:02}:{:02}", hours, minutes)
-        } else {
-            "00:00".to_string()
-        }
-    };
+    let format_time =
+        |timestamp: &DateTime<Utc>| -> String { timestamp.format("%H:%M").to_string() };
 
-    let get_room_messages = move || -> Vec<Message> {
+    let get_room_messages = move || -> Vec<ChatMessage> {
         if let Some(room) = active_room.get() {
             messages.get().get(&room.id).cloned().unwrap_or_default()
         } else {
