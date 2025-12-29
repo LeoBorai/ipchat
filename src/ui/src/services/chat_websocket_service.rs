@@ -1,6 +1,8 @@
+use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use anyhow::{Result, bail};
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::Message;
 use gloo_net::websocket::futures::WebSocket;
@@ -8,6 +10,8 @@ use gloo_timers::future::TimeoutFuture;
 use leptos::logging::{error, log};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: RefCell<ChatWebSocketService> = RefCell::new(ChatWebSocketService::default()));
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -96,7 +100,7 @@ where
 #[derive(Clone)]
 pub struct ChatWebSocketService {
     ws: Option<Arc<Mutex<WebSocket>>>,
-    server_url: String,
+    server_url: Option<String>,
     reconnect_delay: Duration,
     should_reconnect: bool,
     is_connected: bool,
@@ -113,15 +117,33 @@ impl std::fmt::Debug for ChatWebSocketService {
     }
 }
 
-impl ChatWebSocketService {
-    pub fn new(server_url: String, reconnect_delay: Option<Duration>) -> Self {
+impl Default for ChatWebSocketService {
+    fn default() -> Self {
         Self {
             ws: None,
-            server_url,
-            reconnect_delay: reconnect_delay.unwrap_or(Duration::from_millis(3000)),
+            server_url: None,
+            reconnect_delay: Duration::from_millis(3000),
             should_reconnect: false,
             is_connected: false,
         }
+    }
+}
+
+impl ChatWebSocketService {
+    pub fn get() -> ChatWebSocketService {
+        CHAT_WEB_SOCKET_SERVICE.with(|service| service.borrow().clone())
+    }
+
+    pub fn set_server_url(&mut self, server_url: String) {
+        self.server_url = Some(server_url);
+    }
+
+    pub fn set_reconnect_delay(&mut self, delay: Duration) {
+        self.reconnect_delay = delay;
+    }
+
+    pub fn set_should_reconnect(&mut self, should_reconnect: bool) {
+        self.should_reconnect = should_reconnect;
     }
 
     pub fn connect<F1, F2, F3>(
@@ -143,16 +165,21 @@ impl ChatWebSocketService {
         on_connection_change: F1,
         on_message: F2,
         on_initial_connect: F3,
-    ) where
+    ) -> Result<()>
+    where
         F1: Fn(bool, ConnectionStatus) + Clone + 'static,
         F2: Fn(ServerMessage) + Clone + 'static,
         F3: Fn() + Clone + 'static,
     {
-        log!("Connecting to server: {}", self.server_url);
+        let Some(server_url) = &self.server_url else {
+            bail!("Server URL is not set");
+        };
+
+        log!("Connecting to server: {:?}", self.server_url);
 
         on_connection_change(false, ConnectionStatus::Connecting);
 
-        match WebSocket::open(&self.server_url) {
+        match WebSocket::open(&server_url) {
             Ok(ws) => {
                 log!("Connected to server");
                 on_connection_change(true, ConnectionStatus::Connected);
@@ -166,7 +193,6 @@ impl ChatWebSocketService {
                 let on_connection_change_clone = on_connection_change.clone();
                 let on_message_clone = on_message.clone();
 
-                // Handle incoming messages
                 leptos::task::spawn_local(async move {
                     while let Some(msg) = receiver.next().await {
                         match msg {
@@ -201,10 +227,12 @@ impl ChatWebSocketService {
                         TimeoutFuture::new(reconnect_delay.as_millis() as u32).await;
                     }
                 });
+
+                Ok(())
             }
             Err(e) => {
-                error!("Failed to connect: {:?}", e);
                 on_connection_change(false, ConnectionStatus::ConnectionFailed);
+                bail!("Failed to connect: {:?}", e)
             }
         }
     }
@@ -228,10 +256,6 @@ impl ChatWebSocketService {
 
     pub fn is_connected(&self) -> bool {
         self.is_connected
-    }
-
-    pub fn update_server_url(&mut self, server_url: String) {
-        self.server_url = server_url;
     }
 
     pub fn list_nodes(&self) {

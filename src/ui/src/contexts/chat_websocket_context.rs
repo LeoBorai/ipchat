@@ -5,7 +5,9 @@ use leptos::logging::error;
 use leptos::prelude::{RwSignal, Set, Update};
 use serde::{Deserialize, Serialize};
 
-use crate::services::chat_websocket_service::{ConnectionStatus, ServerMessage};
+use crate::services::chat_websocket_service::{
+    ChatWebSocketService, ConnectionStatus, ServerMessage,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Room {
@@ -42,7 +44,6 @@ pub struct ChatWebSocketContext {
     pub discovered_peers: RwSignal<Vec<Peer>>,
     pub active_room: RwSignal<Option<Room>>,
     pub messages: RwSignal<HashMap<String, Vec<Message>>>,
-    // ws_service: StoredValue<Option<ChatWebSocketService>>,
     // peer_list_interval: StoredValue<Option<Interval>>,
 }
 
@@ -55,7 +56,6 @@ impl Default for ChatWebSocketContext {
             discovered_peers: RwSignal::new(Vec::new()),
             active_room: RwSignal::new(None),
             messages: RwSignal::new(HashMap::new()),
-            // ws_service: StoredValue::new(None),
             // peer_list_interval: StoredValue::new(None),
         }
     }
@@ -132,30 +132,29 @@ impl ChatWebSocketContext {
     }
 
     pub fn connect(&self, server_url: String) {
-        // let ws_service = ChatWebSocketService::new(server_url, None);
+        let ctx = self.clone();
+        let mut chat_web_socket_service = ChatWebSocketService::get();
+        chat_web_socket_service.set_server_url(server_url);
 
-        // let is_connected = self.is_connected;
-        // let connection_status = self.connection_status;
-        // let ctx = self.clone();
+        let is_connected = self.is_connected;
+        let connection_status = self.connection_status;
 
-        // ws_service.connect(
-        //     move |connected, status| {
-        //         is_connected.set(connected);
-        //         connection_status.set(status);
-        //     },
-        //     move |message| {
-        //         ctx.handle_server_message(message);
-        //     },
-        //     {
-        //         let ws_service_clone = ws_service.clone();
-        //         move || {
-        //             ws_service_clone.list_nodes();
-        //             ws_service_clone.list_rooms();
-        //         }
-        //     },
-        // );
-
-        // self.ws_service.set_value(Some(ws_service));
+        chat_web_socket_service.connect(
+            move |connected, status| {
+                is_connected.set(connected);
+                connection_status.set(status);
+            },
+            move |message| {
+                ctx.handle_server_message(message);
+            },
+            {
+                let ws_service_clone = chat_web_socket_service.clone();
+                move || {
+                    ws_service_clone.list_nodes();
+                    ws_service_clone.list_rooms();
+                }
+            },
+        );
 
         // Set up peer list polling when connected
         self.setup_peer_list_polling();

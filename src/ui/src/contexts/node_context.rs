@@ -6,7 +6,7 @@ use ipchat_client::{ApiClient, NodeObject};
 #[derive(Clone, Debug)]
 pub struct NodeContext {
     pub node_info: RwSignal<Option<NodeObject>>,
-    pub server_url: RwSignal<String>,
+    pub server_url: RwSignal<Option<String>>,
     pub is_loading: RwSignal<bool>,
 }
 
@@ -14,7 +14,7 @@ impl Default for NodeContext {
     fn default() -> Self {
         let ctx = Self {
             node_info: RwSignal::new(None),
-            server_url: RwSignal::new("ws://localhost:8080".to_string()),
+            server_url: RwSignal::new(None),
             is_loading: RwSignal::new(true),
         };
 
@@ -51,7 +51,7 @@ impl NodeContext {
                     format!("ws://{}:{}", server_local_ip_addr, web_socket_port)
                 };
 
-                self.server_url.set(new_server_url);
+                self.server_url.set(Some(new_server_url));
                 self.node_info.set(Some(node_object));
             }
             Err(err) => {

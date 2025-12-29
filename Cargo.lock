@@ -1263,6 +1263,7 @@ dependencies = [
 name = "ipchat-ui"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "console_error_panic_hook",
  "console_log",

@@ -2,6 +2,8 @@ use leptos::prelude::*;
 
 use crate::components::molecules::{Room, Sidebar};
 use crate::components::organisms::ChatArea;
+use crate::hooks::chat_websocket::use_chat_ws;
+use crate::hooks::node::use_server_url;
 
 #[component]
 pub fn Chat() -> impl IntoView {
@@ -36,6 +38,13 @@ pub fn Chat() -> impl IntoView {
     let create_room = |room_name: String| {
         // Implementation to create a new room
     };
+
+    Effect::new(move || {
+        let Some(server_url) = use_server_url().get() else {
+            return;
+        };
+        use_chat_ws().connect(server_url);
+    });
 
     view! {
         <div>
