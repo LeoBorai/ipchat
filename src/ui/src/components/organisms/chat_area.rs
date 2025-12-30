@@ -13,16 +13,16 @@ pub fn ChatArea(
     send_message: impl Fn(Uuid, String, String) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let (new_message, set_new_message) = signal(String::new());
-    let username_clone = username.clone();
+    let username_clone = username;
     let messages = use_messages();
     let is_connected = use_is_connected();
     let handle_send_message = move || {
         let message_text = new_message.get();
-        if !message_text.trim().is_empty() {
-            if let Some(room) = active_room.get() {
-                send_message(room.id, message_text, username.get_untracked());
-                set_new_message.set(String::new());
-            }
+        if !message_text.trim().is_empty()
+            && let Some(room) = active_room.get()
+        {
+            send_message(room.id, message_text, username.get_untracked());
+            set_new_message.set(String::new());
         }
     };
 
@@ -49,7 +49,7 @@ pub fn ChatArea(
                 <div class="flex-1 overflow-y-auto p-4 space-y-3">
                     <For
                         each=move || get_room_messages()
-                        key=|msg| msg.timestamp.clone()
+                        key=|msg| msg.timestamp
                         children=move |msg| {
                             let is_own = msg.sender == username_clone.get_untracked();
                             let is_system = msg.sender == "System";

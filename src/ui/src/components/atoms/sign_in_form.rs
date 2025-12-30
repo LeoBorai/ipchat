@@ -14,7 +14,7 @@ where
         }
     };
 
-    let is_disabled = move || username.get().trim().is_empty();
+    let _is_disabled = move || username.get().trim().is_empty();
 
     view! {
         <div class="flex items-center justify-center min-h-screen from-blue-50 to-indigo-100">

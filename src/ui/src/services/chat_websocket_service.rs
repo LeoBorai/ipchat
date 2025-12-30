@@ -1,17 +1,16 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Result, bail};
+use anyhow::{Error, Result, bail};
 use futures::stream::SplitSink;
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::Message;
 use gloo_net::websocket::futures::WebSocket;
 use gloo_timers::future::TimeoutFuture;
 use leptos::logging::{error, log};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde::Serialize;
 use uuid::Uuid;
 
 thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: Rc<RefCell<ChatWebSocketService>> = Rc::new(RefCell::new(ChatWebSocketService::default())));
@@ -78,7 +77,7 @@ impl Default for ChatWebSocketService {
 
 impl ChatWebSocketService {
     pub fn get() -> Rc<RefCell<ChatWebSocketService>> {
-        CHAT_WEB_SOCKET_SERVICE.with(|service| Rc::clone(&service))
+        CHAT_WEB_SOCKET_SERVICE.with(|service| Rc::clone(service))
     }
 
     pub fn set_server_url(&mut self, server_url: String) {
@@ -127,7 +126,7 @@ impl ChatWebSocketService {
 
         on_connection_change(false, ConnectionStatus::Connecting);
 
-        match WebSocket::open(&server_url) {
+        match WebSocket::open(server_url) {
             Ok(ws) => {
                 let (ws, mut receiver) = ws.split();
 
@@ -192,18 +191,22 @@ impl ChatWebSocketService {
         self.is_connected = false;
     }
 
-    pub async fn send(&self, message: &impl Serialize) {
+    pub async fn send(&self, message: &impl Serialize) -> Result<()> {
         log!("Sending");
         if let Some(ws) = &self.ws {
-            let mut ws = ws.lock().unwrap(); // remove unwrap in production code
-            if let Ok(json) = serde_json::to_string(message) {
-                if let Err(err) = ws.send(Message::Text(json)).await {
-                    error!("Failed to send message. {:?}", err);
-                }
+            let mut ws = ws.lock().map_err(|err| {
+                Error::msg(format!("Failed to acquire WebSocket lock: {:?}", err))
+            })?;
+            if let Ok(json) = serde_json::to_string(message)
+                && let Err(err) = ws.send(Message::Text(json)).await
+            {
+                bail!("Failed to send message. {:?}", err);
             }
-        } else {
-            error!("WebSocket is not connected");
+
+            return Ok(());
         }
+
+        bail!("WebSocket is not connected");
     }
 
     pub fn is_connected(&self) -> bool {
@@ -232,7 +235,7 @@ impl ChatWebSocketService {
         .await;
     }
 
-    pub async fn create_room(&self, name: String) {
+    pub async fn create_room(&self, name: String) -> Result<()> {
         #[derive(Serialize)]
         struct CreateRoomMessage {
             r#type: String,
@@ -242,7 +245,7 @@ impl ChatWebSocketService {
             r#type: "CreateRoom".to_string(),
             name,
         })
-        .await;
+        .await
     }
 
     pub async fn join_room(&self, room_id: String, peer_ip: String) {

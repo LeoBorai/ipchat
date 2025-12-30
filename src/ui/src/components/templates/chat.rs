@@ -16,29 +16,26 @@ pub fn Chat() -> impl IntoView {
     let discovered_peers = RwSignal::new(vec![]);
     let active_room: RwSignal<Option<Room>> = RwSignal::new(None);
     let set_active_room = {
-        let active_room = active_room.clone();
+        let active_room = active_room;
         move |room: Room| {
-            let active_room = active_room.clone();
+            let active_room = active_room;
             active_room.set(Some(room.clone()));
         }
     };
     let open_sidebar = {
-        let is_sidebar_open = is_sidebar_open.clone();
+        let is_sidebar_open = is_sidebar_open;
         move || {
             is_sidebar_open.set(true);
         }
     };
     let close_sidebar = {
-        let is_sidebar_open = is_sidebar_open.clone();
+        let is_sidebar_open = is_sidebar_open;
         move || {
             is_sidebar_open.set(false);
         }
     };
     let request_peer_list = || {
         // Implementation to request peer list
-    };
-    let create_room = |room_name: String| {
-        // Implementation to create a new room
     };
 
     Effect::new(move || {
@@ -62,12 +59,11 @@ pub fn Chat() -> impl IntoView {
                 set_active_room={set_active_room}
                 discovered_peers={discovered_peers.read_only()}
                 request_peer_list={request_peer_list}
-                create_room={create_room}
             />
             <ChatArea
                 username={username.read_only()}
                 active_room={active_room.read_only()}
-                send_message={|room_id, username, content| {
+                send_message={|_room_id, _username, _content| {
                     // Implementation to send message
                 }}
             />

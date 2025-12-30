@@ -1,7 +1,5 @@
 use leptos::prelude::{Get, Signal, expect_context};
 
-use ipchat_client::NodeObject;
-
 use crate::contexts::node_context::NodeContext;
 
 pub fn use_node() -> NodeContext {

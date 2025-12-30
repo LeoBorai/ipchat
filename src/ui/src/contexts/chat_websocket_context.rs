@@ -43,7 +43,7 @@ impl ChatWebSocketContext {
             ServerMessage::RoomCreated { room } => {
                 self.rooms.update(|rooms| rooms.push(room.clone()));
                 self.messages.update(|msgs| {
-                    msgs.insert(room.id.clone(), Vec::new());
+                    msgs.insert(room.id, Vec::new());
                 });
             }
             ServerMessage::RoomJoined { room } => {
@@ -55,9 +55,9 @@ impl ChatWebSocketContext {
                             sender: "System".to_string(),
                             content: format!("You joined {}", room.name),
                             timestamp: Utc::now(),
-                            room_id: room.id.clone(),
+                            room_id: room.id,
                         };
-                        msgs.insert(room.id.clone(), vec![system_message]);
+                        msgs.insert(room.id, vec![system_message]);
                     }
                 });
             }
@@ -72,7 +72,7 @@ impl ChatWebSocketContext {
                 self.rooms.set(rooms.clone());
                 self.messages.update(|msgs| {
                     for room in rooms {
-                        msgs.entry(room.id.clone()).or_insert_with(Vec::new);
+                        msgs.entry(room.id).or_insert_with(Vec::new);
                     }
                 });
             }
@@ -176,19 +176,21 @@ impl ChatWebSocketContext {
         // }
     }
 
-    pub fn create_room(&self, room_name: String) {
-        // if let Some(service) = self.ws_service.get_value() {
-        //     service.create_room(room_name);
-        // }
+    pub async fn create_room(&self, room_name: String) -> Result<()> {
+        let chat_web_socket_service = ChatWebSocketService::get();
+        chat_web_socket_service
+            .borrow()
+            .create_room(room_name)
+            .await
     }
 
-    pub fn join_room(&self, room_id: String, peer_ip: String) {
+    pub fn join_room(&self, _room_id: String, _peer_ip: String) {
         // if let Some(service) = self.ws_service.get_value() {
         //     service.join_room(room_id, peer_ip);
         // }
     }
 
-    pub fn send_message(&self, room_id: String, content: String, sender: String) {
+    pub fn send_message(&self, _room_id: String, _content: String, _sender: String) {
         // if let Some(service) = self.ws_service.get_value() {
         //     service.send_message(room_id, content, sender);
         // }
