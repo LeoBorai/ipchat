@@ -41,19 +41,6 @@ impl std::fmt::Display for ConnectionStatus {
     }
 }
 
-pub struct ChatWebSocketConfig<F1, F2, F3>
-where
-    F1: Fn(bool, ConnectionStatus) + 'static,
-    F2: Fn(ServerMessage) + 'static,
-    F3: Fn() + 'static,
-{
-    pub server_url: String,
-    pub reconnect_delay: Duration,
-    pub on_connection_change: Option<F1>,
-    pub on_message: Option<F2>,
-    pub on_initial_connect: Option<F3>,
-}
-
 #[derive(Clone)]
 pub struct ChatWebSocketService {
     id: Uuid,

@@ -2,16 +2,17 @@ use leptos::prelude::*;
 
 use ipchat::proto::{PeerRoom, Room};
 
-use crate::hooks::{chat_websocket::use_connection_status, node::use_server_url};
+use crate::hooks::{
+    chat_websocket::{use_active_room, use_connection_status, use_rooms},
+    node::use_server_url,
+};
 
 #[component]
 pub fn Sidebar(
     #[prop(into)] username: Signal<String>,
     #[prop(into)] is_sidebar_open: Signal<bool>,
     #[prop(into)] is_connected: Signal<bool>,
-    #[prop(into)] my_rooms: Signal<Vec<Room>>,
     #[prop(into)] discovered_peers: Signal<Vec<PeerRoom>>,
-    #[prop(into)] active_room: Signal<Option<Room>>,
     open_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     close_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     set_active_room: impl Fn(Room) + Clone + Send + Sync + 'static,
@@ -22,6 +23,8 @@ pub fn Sidebar(
     let (show_create_room, set_show_create_room) = signal(false);
     let server_url = use_server_url();
     let connection_status = use_connection_status();
+    let rooms = use_rooms();
+    let active_room = use_active_room();
 
     let handle_create_room = move || {
         let room_name = new_room_name.get();
@@ -46,7 +49,6 @@ pub fn Sidebar(
 
     view! {
         <>
-            {/* Toggle Button */}
             <button
                 on:click=move |_| toggle_sidebar()
                 class="fixed bottom-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition md:hidden"
@@ -77,17 +79,13 @@ pub fn Sidebar(
                     <path d="M9 3v18"></path>
                 </svg>
             </button>
-
-            {/* Sidebar */}
-            <div class=move || {
+            <div id="sidebar" class=move || {
                 format!(
                     "w-80 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 {} fixed md:relative h-full z-40",
                     if is_sidebar_open.get() { "translate-x-0" } else { "-translate-x-full" },
                 )
             }>
-
-                {/* User Info */}
-                <div class="p-4 border-b border-gray-200 bg-indigo-50">
+                <div id="user-info" class="p-4 border-b border-gray-200 bg-indigo-50">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-3">
                             <div class="bg-indigo-600 p-2 rounded-full">
@@ -147,9 +145,7 @@ pub fn Sidebar(
                         <p class="text-xs text-gray-600">{move || format!("{}", connection_status.get()) }</p>
                     </div>
                 </div>
-
-                {/* My Rooms */}
-                <div class="flex-1 overflow-y-auto">
+                <div id="rooms" class="flex-1 overflow-y-auto">
                     <div class="p-4">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="font-semibold text-gray-700 flex items-center gap-2">
@@ -167,9 +163,10 @@ pub fn Sidebar(
                                 >
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                 </svg>
-                                "My Rooms"
+                                "Rooms"
                             </h3>
                             <button
+                                id="create-room-btn"
                                 on:click=move |_| set_show_create_room.set(!show_create_room.get())
                                 class="p-1 hover:bg-gray-100 rounded"
                             >
@@ -190,82 +187,119 @@ pub fn Sidebar(
                                 </svg>
                             </button>
                         </div>
+                        <For
+                            each=move || rooms.get()
+                            key=|room| room.id
+                            children={
+                                let set_active_room = set_active_room.clone();
 
-                        // {move || {
-                        //     show_create_room
-                        //         .get()
-                        //         .then(|| {
-                        //             view! {
-                        //                 <div class="mb-3 flex gap-2">
-                        //                     <input
-                        //                         type="text"
-                        //                         placeholder="Room name"
-                        //                         prop:value=new_room_name
-                        //                         on:input=move |ev| {
-                        //                             set_new_room_name.set(event_target_value(&ev));
-                        //                         }
+                                move |room: Room| {
+                                let room_clone = room.clone();
+                                let active = active_room.get();
+                                let is_active = active
+                                    .as_ref()
+                                    .map(|r| r.id == room.id)
+                                    .unwrap_or(false);
+                                    view! {
+                                        <button
+                                            on:click={
+                                                let room = room_clone.clone();
+                                                let set_active_room = set_active_room.clone();
+                                                move |_| {
+                                                    set_active_room(room.clone())
+                                                }
+                                            }
+                                            class=format!(
+                                                "w-full text-left p-3 rounded-lg mb-2 transition {}",
+                                                if is_active {
+                                                    "bg-indigo-100 border border-indigo-300"
+                                                } else {
+                                                    "hover:bg-gray-50 border border-transparent"
+                                                },
+                                            )
+                                        >
+                                            <p class="font-medium text-gray-800">{room.name.clone()}</p>
+                                            <p class="text-xs text-gray-500">
+                                                {format!("{} participant(s)", room.participants.len())}
+                                            </p>
+                                        </button>
+                                    }
+                                }
+                            }
 
-                        //                         on:keypress=move |ev| {
-                        //                             if ev.key() == "Enter" {
-                        //                                 handle_create_room();
-                        //                             }
-                        //                         }
-
-                        //                         class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        //                     />
-                        //                     <button
-                        //                         on:click=move |_| handle_create_room()
-                        //                         class="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
-                        //                     >
-                        //                         "Add"
-                        //                     </button>
-                        //                 </div>
-                        //             }
-                        //         })
-                        // }}
-
-                        // {move || {
-                        //     let rooms = my_rooms.get();
-                        //     if rooms.is_empty() {
-                        //         view! {
-                        //             <p class="text-sm text-gray-500">"No rooms yet. Create one!"</p>
-                        //         }
-                        //             .into_any()
-                        //     } else {
-                        //         rooms
-                        //             .into_iter()
-                        //             .map(|room| {
-                        //                 let room_clone = room.clone();
-                        //                 let active = active_room.get();
-                        //                 let is_active = active
-                        //                     .as_ref()
-                        //                     .map(|r| r.id == room.id)
-                        //                     .unwrap_or(false);
-                        //                 view! {
-                        //                     <button
-                        //                         on:click=move |_| set_active_room(room_clone.clone())
-                        //                         class=format!(
-                        //                             "w-full text-left p-3 rounded-lg mb-2 transition {}",
-                        //                             if is_active {
-                        //                                 "bg-indigo-100 border border-indigo-300"
-                        //                             } else {
-                        //                                 "hover:bg-gray-50 border border-transparent"
-                        //                             },
-                        //                         )
-                        //                     >
-
-                        //                         <p class="font-medium text-gray-800">{room.name.clone()}</p>
-                        //                         <p class="text-xs text-gray-500">
-                        //                             {format!("{} participant(s)", room.participants.len())}
-                        //                         </p>
-                        //                     </button>
-                        //                 }
-                        //             })
-                        //             .collect_view()
-                        //             .into_any()
-                        //     }
-                        // }}
-
+                        />
+                        <Show when=move || show_create_room.get()>
+                            <div class="mb-3 flex gap-2">
+                                <input
+                                    type="text"
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="Room name"
+                                    prop:value=new_room_name
+                                    on:input={
+                                        let set_new_room_name = set_new_room_name.clone();
+                                        move |ev| {
+                                            set_new_room_name.set(event_target_value(&ev));
+                                        }
+                                    }
+                                    on:keypress={
+                                        let handle_create_room = handle_create_room.clone();
+                                        move |ev| {
+                                            if ev.key() == "Enter" {
+                                                handle_create_room();
+                                            }
+                                        }
+                                    }
+                                />
+                                <button
+                                    on:click={
+                                        let handle_create_room = handle_create_room.clone();
+                                        move |_| handle_create_room()
+                                    }
+                                    class="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                                >
+                                    "Add"
+                                </button>
+                            </div>
+                        </Show>
+                        <For
+                            each=move || rooms.get()
+                            key=|room| room.id
+                            children={
+                                let set_active_room = set_active_room.clone();
+                                move |room: Room| {
+                                let room_clone = room.clone();
+                                let active = active_room.get();
+                                let is_active = active
+                                    .as_ref()
+                                    .map(|r| r.id == room.id)
+                                    .unwrap_or(false);
+                                    view! {
+                                        <button
+                                            on:click={
+                                                let room = room_clone.clone();
+                                                let set_active_room = set_active_room.clone();
+                                                move |_| {
+                                                    set_active_room(room.clone())
+                                                }
+                                            }
+                                            class=format!(
+                                                "w-full text-left p-3 rounded-lg mb-2 transition {}",
+                                                if is_active {
+                                                    "bg-indigo-100 border border-indigo-300"
+                                                } else {
+                                                    "hover:bg-gray-50 border border-transparent"
+                                                },
+                                            )
+                                        >
+                                            <p class="font-medium text-gray-800">{room.name.clone()}</p>
+                                            <p class="text-xs text-gray-500">
+                                                {format!("{} participant(s)", room.participants.len())}
+                                            </p>
+                                        </button>
+                                    }
+                                }
+                            }
+                        />
                     </div>
 
                     {/* Discovered Peers */}

@@ -16,7 +16,7 @@ use crate::services::chat_websocket_service::{ChatWebSocketService, ConnectionSt
 pub struct ChatWebSocketContext {
     pub is_connected: RwSignal<bool>,
     pub connection_status: RwSignal<ConnectionStatus>,
-    pub my_rooms: RwSignal<Vec<Room>>,
+    pub rooms: RwSignal<Vec<Room>>,
     pub discovered_peers: RwSignal<Vec<PeerRoom>>,
     pub active_room: RwSignal<Option<Room>>,
     pub messages: RwSignal<HashMap<Uuid, Vec<ChatMessage>>>,
@@ -28,7 +28,7 @@ impl Default for ChatWebSocketContext {
         Self {
             is_connected: RwSignal::new(false),
             connection_status: RwSignal::new(ConnectionStatus::Disconnected),
-            my_rooms: RwSignal::new(Vec::new()),
+            rooms: RwSignal::new(Vec::new()),
             discovered_peers: RwSignal::new(Vec::new()),
             active_room: RwSignal::new(None),
             messages: RwSignal::new(HashMap::new()),
@@ -41,7 +41,7 @@ impl ChatWebSocketContext {
     fn handle_server_message(&self, message: ServerMessage) {
         match message {
             ServerMessage::RoomCreated { room } => {
-                self.my_rooms.update(|rooms| rooms.push(room.clone()));
+                self.rooms.update(|rooms| rooms.push(room.clone()));
                 self.messages.update(|msgs| {
                     msgs.insert(room.id.clone(), Vec::new());
                 });
@@ -69,7 +69,7 @@ impl ChatWebSocketContext {
                 });
             }
             ServerMessage::RoomList { rooms } => {
-                self.my_rooms.set(rooms.clone());
+                self.rooms.set(rooms.clone());
                 self.messages.update(|msgs| {
                     for room in rooms {
                         msgs.entry(room.id.clone()).or_insert_with(Vec::new);

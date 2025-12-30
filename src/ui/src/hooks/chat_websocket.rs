@@ -18,8 +18,8 @@ pub fn use_connection_status() -> Signal<ConnectionStatus> {
     Signal::derive(move || use_chat_ws().connection_status.get())
 }
 
-pub fn use_my_rooms() -> Signal<Vec<Room>> {
-    Signal::derive(move || use_chat_ws().my_rooms.get())
+pub fn use_rooms() -> Signal<Vec<Room>> {
+    Signal::derive(move || use_chat_ws().rooms.get())
 }
 
 pub fn use_discovered_peers() -> Signal<Vec<PeerRoom>> {

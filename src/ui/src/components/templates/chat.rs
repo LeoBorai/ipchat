@@ -13,7 +13,6 @@ pub fn Chat() -> impl IntoView {
     let username = RwSignal::new(String::from("myuser"));
     let is_sidebar_open = RwSignal::new(true);
     let is_connected = RwSignal::new(false);
-    let my_rooms = RwSignal::new(vec![]);
     let discovered_peers = RwSignal::new(vec![]);
     let active_room: RwSignal<Option<Room>> = RwSignal::new(None);
     let set_active_room = {
@@ -61,9 +60,7 @@ pub fn Chat() -> impl IntoView {
                 close_sidebar={close_sidebar}
                 is_connected={is_connected.read_only()}
                 set_active_room={set_active_room}
-                my_rooms={my_rooms.read_only()}
                 discovered_peers={discovered_peers.read_only()}
-                active_room={active_room.read_only()}
                 request_peer_list={request_peer_list}
                 create_room={create_room}
             />
