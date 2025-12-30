@@ -1,8 +1,6 @@
 use leptos::logging::error;
 use leptos::prelude::*;
 
-use ipchat::proto::Room;
-
 use crate::components::molecules::Sidebar;
 use crate::components::organisms::ChatArea;
 use crate::hooks::chat_websocket::use_chat_ws;
@@ -14,14 +12,6 @@ pub fn Chat() -> impl IntoView {
     let is_sidebar_open = RwSignal::new(true);
     let is_connected = RwSignal::new(false);
     let discovered_peers = RwSignal::new(vec![]);
-    let active_room: RwSignal<Option<Room>> = RwSignal::new(None);
-    let set_active_room = {
-        let active_room = active_room;
-        move |room: Room| {
-            let active_room = active_room;
-            active_room.set(Some(room.clone()));
-        }
-    };
     let open_sidebar = {
         let is_sidebar_open = is_sidebar_open;
         move || {
@@ -49,23 +39,18 @@ pub fn Chat() -> impl IntoView {
     });
 
     view! {
-        <div>
+        <div class="flex h-screen bg-gray-100">
             <Sidebar
                 username={username.read_only()}
                 is_sidebar_open={is_sidebar_open.read_only()}
                 open_sidebar={open_sidebar}
                 close_sidebar={close_sidebar}
                 is_connected={is_connected.read_only()}
-                set_active_room={set_active_room}
                 discovered_peers={discovered_peers.read_only()}
                 request_peer_list={request_peer_list}
             />
             <ChatArea
                 username={username.read_only()}
-                active_room={active_room.read_only()}
-                send_message={|_room_id, _username, _content| {
-                    // Implementation to send message
-                }}
             />
         </div>
     }

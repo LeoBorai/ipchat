@@ -77,7 +77,7 @@ impl Default for ChatWebSocketService {
 
 impl ChatWebSocketService {
     pub fn get() -> Rc<RefCell<ChatWebSocketService>> {
-        CHAT_WEB_SOCKET_SERVICE.with(|service| Rc::clone(service))
+        CHAT_WEB_SOCKET_SERVICE.with(Rc::clone)
     }
 
     pub fn set_server_url(&mut self, server_url: String) {
@@ -122,8 +122,6 @@ impl ChatWebSocketService {
             bail!("Server URL is not set");
         };
 
-        log!("Connecting to server: {:?}", self.server_url);
-
         on_connection_change(false, ConnectionStatus::Connecting);
 
         match WebSocket::open(server_url) {
@@ -147,7 +145,6 @@ impl ChatWebSocketService {
                             Ok(Message::Text(text)) => {
                                 match serde_json::from_str::<ServerMessage>(&text) {
                                     Ok(message) => {
-                                        log!("Received: {:?}", message);
                                         on_message_clone(message);
                                     }
                                     Err(e) => {
@@ -192,7 +189,6 @@ impl ChatWebSocketService {
     }
 
     pub async fn send(&self, message: &impl Serialize) -> Result<()> {
-        log!("Sending");
         if let Some(ws) = &self.ws {
             let mut ws = ws.lock().map_err(|err| {
                 Error::msg(format!("Failed to acquire WebSocket lock: {:?}", err))
@@ -263,11 +259,11 @@ impl ChatWebSocketService {
         .await;
     }
 
-    pub async fn send_message(&self, room_id: String, content: String, sender: String) {
+    pub async fn send_message(&self, room_id: Uuid, content: String, sender: String) -> Result<()> {
         #[derive(Serialize)]
         struct SendMessageMessage {
             r#type: String,
-            room_id: String,
+            room_id: Uuid,
             content: String,
             sender: String,
         }
@@ -277,6 +273,6 @@ impl ChatWebSocketService {
             content,
             sender,
         })
-        .await;
+        .await
     }
 }

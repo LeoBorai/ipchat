@@ -2,10 +2,10 @@ use leptos::prelude::*;
 
 use ipchat::proto::{PeerRoom, Room};
 
-use crate::hooks::{
-    chat_websocket::{use_active_room, use_chat_ws, use_connection_status, use_rooms},
-    node::use_server_url,
+use crate::hooks::chat_websocket::{
+    use_active_room, use_chat_ws, use_connection_status, use_rooms,
 };
+use crate::hooks::node::use_server_url;
 
 #[component]
 pub fn Sidebar(
@@ -15,7 +15,6 @@ pub fn Sidebar(
     #[prop(into)] discovered_peers: Signal<Vec<PeerRoom>>,
     open_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     close_sidebar: impl Fn() + Clone + Send + Sync + 'static,
-    set_active_room: impl Fn(Room) + Clone + Send + Sync + 'static,
     request_peer_list: impl Fn() + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let (new_room_name, set_new_room_name) = signal(String::new());
@@ -195,7 +194,12 @@ pub fn Sidebar(
                             each=move || rooms.get()
                             key=|room| room.id
                             children={
-                                let set_active_room = set_active_room.clone();
+                                let set_active_room = {
+                                    let chat_ws_ctx = use_chat_ws();
+                                    move |room: Room| {
+                                        chat_ws_ctx.set_active_room(Some(room));
+                                    }
+                                };
 
                                 move |room: Room| {
                                 let room_clone = room.clone();
@@ -214,7 +218,7 @@ pub fn Sidebar(
                                                 }
                                             }
                                             class=format!(
-                                                "w-full text-left p-3 rounded-lg mb-2 transition {}",
+                                                "cursor-pointer w-full text-left p-3 rounded-lg mb-2 transition {}",
                                                 if is_active {
                                                     "bg-indigo-100 border border-indigo-300"
                                                 } else {
@@ -265,45 +269,6 @@ pub fn Sidebar(
                                 </button>
                             </div>
                         </Show>
-                        <For
-                            each=move || rooms.get()
-                            key=|room| room.id
-                            children={
-                                let set_active_room = set_active_room.clone();
-                                move |room: Room| {
-                                let room_clone = room.clone();
-                                let active = active_room.get();
-                                let is_active = active
-                                    .as_ref()
-                                    .map(|r| r.id == room.id)
-                                    .unwrap_or(false);
-                                    view! {
-                                        <button
-                                            on:click={
-                                                let room = room_clone.clone();
-                                                let set_active_room = set_active_room.clone();
-                                                move |_| {
-                                                    set_active_room(room.clone())
-                                                }
-                                            }
-                                            class=format!(
-                                                "w-full text-left p-3 rounded-lg mb-2 transition {}",
-                                                if is_active {
-                                                    "bg-indigo-100 border border-indigo-300"
-                                                } else {
-                                                    "hover:bg-gray-50 border border-transparent"
-                                                },
-                                            )
-                                        >
-                                            <p class="font-medium text-gray-800">{room.name.clone()}</p>
-                                            <p class="text-xs text-gray-500">
-                                                {format!("{} participant(s)", room.participants.len())}
-                                            </p>
-                                        </button>
-                                    }
-                                }
-                            }
-                        />
                     </div>
 
                     {/* Discovered Peers */}

@@ -50,14 +50,14 @@ impl ChatWebSocketContext {
                 self.active_room.set(Some(room.clone()));
 
                 self.messages.update(|msgs| {
-                    if !msgs.contains_key(&room.id) {
+                    if let std::collections::hash_map::Entry::Vacant(e) = msgs.entry(room.id) {
                         let system_message = ChatMessage {
                             sender: "System".to_string(),
                             content: format!("You joined {}", room.name),
                             timestamp: Utc::now(),
                             room_id: room.id,
                         };
-                        msgs.insert(room.id, vec![system_message]);
+                        e.insert(vec![system_message]);
                     }
                 });
             }
@@ -106,7 +106,6 @@ impl ChatWebSocketContext {
             {
                 move |ws_service| {
                     let ws_service = ws_service.clone();
-                    log!("on initial: {:?}", ws_service);
                     leptos::task::spawn_local(async move {
                         ws_service.list_nodes().await;
                         ws_service.list_rooms().await;
@@ -121,19 +120,16 @@ impl ChatWebSocketContext {
     }
 
     fn setup_peer_list_polling(&self) {
-        log!("Init Polling");
         leptos::task::spawn_local(async move {
             loop {
                 TimeoutFuture::new(1000).await;
 
                 let ws_service = ChatWebSocketService::get();
-                log!("Sttatus: {:?}", ws_service);
+
                 if ws_service.borrow().is_connected() {
-                    log!("Starting Polling Interval");
                     let interval = Interval::new(1000, move || {
                         let ws_service = ChatWebSocketService::get();
                         leptos::task::spawn_local(async move {
-                            log!("Polling Peer List");
                             ws_service.borrow_mut().list_nodes().await;
                         });
                     });
@@ -190,10 +186,12 @@ impl ChatWebSocketContext {
         // }
     }
 
-    pub fn send_message(&self, _room_id: String, _content: String, _sender: String) {
-        // if let Some(service) = self.ws_service.get_value() {
-        //     service.send_message(room_id, content, sender);
-        // }
+    pub async fn send_message(&self, room_id: Uuid, content: String, sender: String) -> Result<()> {
+        let chat_web_socket_service = ChatWebSocketService::get();
+        chat_web_socket_service
+            .borrow()
+            .send_message(room_id, content, sender)
+            .await
     }
 }
 

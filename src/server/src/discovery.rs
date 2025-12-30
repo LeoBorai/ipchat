@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use socket2::{Domain, Protocol, Socket, Type};
 use tokio::net::UdpSocket;
 use tokio::time::{self, Duration};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use crate::node::ArcNode;
 use crate::proto::NodeInfo;
@@ -62,7 +62,7 @@ impl DiscoveryService {
                 }) {
                     Ok(json) => match socket.send_to(json.as_bytes(), broadcast_addr).await {
                         Ok(len) => {
-                            info!(len=%len, broadcast_addr=%broadcast_addr, "Broadcast message sent");
+                            debug!(len=%len, broadcast_addr=%broadcast_addr, "Broadcast message sent");
                         }
                         Err(e) => {
                             error!(?e, %broadcast_addr, "Failed to send broadcast");
