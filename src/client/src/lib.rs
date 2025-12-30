@@ -60,15 +60,7 @@ pub struct ApiClient {
 
 impl ApiClient {
     /// Creates a new API client with the base URL as current
-    pub fn new() -> Self {
-        Self {
-            base_url: String::default(),
-            client: reqwest::Client::new(),
-        }
-    }
-
-    /// Creates a new API client with the base URL as current
-    pub fn remote<S: Into<String>>(base_url: S) -> Self {
+    pub fn new<S: Into<String>>(base_url: S) -> Self {
         Self {
             base_url: base_url.into(),
             client: reqwest::Client::new(),

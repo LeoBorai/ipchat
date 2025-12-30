@@ -3,6 +3,7 @@ mod contexts;
 mod hooks;
 mod pages;
 mod services;
+mod utils;
 
 use leptos::prelude::*;
 use leptos_meta::*;

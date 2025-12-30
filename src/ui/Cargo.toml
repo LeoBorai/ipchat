@@ -15,6 +15,7 @@ chrono = { workspace = true, features = ["serde"] }
 console_error_panic_hook = { workspace = true }
 console_log = { workspace = true }
 futures = { workspace = true }
+gloo = { workspace = true }
 gloo-net = { workspace = true, features = ["websocket"] }
 gloo-timers = { workspace = true, features = ["futures"] }
 leptos = { workspace = true, features = ["csr"] }

@@ -17,3 +17,8 @@ open = false
 
 [tools]
 tailwindcss = "4.1.18"
+
+[[proxy]]
+backend = "http://localhost:4724/api"
+rewrite = "/api"
+ws = false

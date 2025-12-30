@@ -1,7 +1,11 @@
+use anyhow::Result;
 use leptos::logging::error;
+use leptos::logging::log;
 use leptos::prelude::{RwSignal, Set};
 
 use ipchat_client::{ApiClient, NodeObject};
+
+use crate::utils::domain::host;
 
 #[derive(Clone, Debug)]
 pub struct NodeContext {
@@ -21,7 +25,12 @@ impl Default for NodeContext {
         leptos::task::spawn_local({
             let ctx = ctx.clone();
             async move {
-                ctx.fetch_node_info().await;
+                if let Err(err) = ctx.fetch_node_info().await {
+                    error!(
+                        "Failed to fetch node info during context initialization. {}",
+                        err
+                    );
+                }
             }
         });
 
@@ -30,8 +39,9 @@ impl Default for NodeContext {
 }
 
 impl NodeContext {
-    async fn fetch_node_info(&self) {
-        let ipchat = ApiClient::remote("http://localhost:4724");
+    async fn fetch_node_info(&self) -> Result<()> {
+        log!("{}", host()?);
+        let ipchat = ApiClient::new(host()?);
 
         match ipchat.node_info().await {
             Ok(node_object) => {
@@ -60,5 +70,6 @@ impl NodeContext {
         }
 
         self.is_loading.set(false);
+        Ok(())
     }
 }
