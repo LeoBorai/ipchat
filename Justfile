@@ -29,6 +29,18 @@ dev:
 gen-openapi:
 	curl http://localhost:4724/api-docs/openapi.json > ./src/client/assets/openapi.json
 
+# Builds the client for Release
+release-client:
+	cd ./src/ui && trunk build --release
+
+# Builds the server for Release
+release-server:
+	cargo build --release
+
+# Release build
+release: release-client release-server
+	@echo "Release build complete."
+
 # Starts the server for Development
 run: build
 	./target/debug/ipchat start
