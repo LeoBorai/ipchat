@@ -12,7 +12,7 @@ impl UserRepository {
         Self { setup }
     }
 
-    pub async fn insert(&self, username: &str) -> Result<User> {
+    pub async fn insert(&self, _username: &str) -> Result<User> {
         // Implementation for creating a user in the database
         unimplemented!()
     }

@@ -4,6 +4,7 @@ pub mod assets;
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Extension, Router};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 use utoipa::OpenApi;
@@ -44,6 +45,7 @@ pub async fn make_router(services: SharedServices) -> Result<Router> {
                 .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
                 .on_response(DefaultOnResponse::new().level(Level::INFO)),
         )
+        .layer(CorsLayer::permissive())
         .layer(Extension(services));
 
     Ok(router)

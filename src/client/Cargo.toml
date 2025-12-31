@@ -1,0 +1,8 @@
+[package]
+name = "ipchat-client"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+reqwest = { workspace = true, features = ["json", "stream"] }
+serde = { workspace = true, features = ["derive"] }

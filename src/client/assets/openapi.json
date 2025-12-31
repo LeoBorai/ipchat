@@ -1,0 +1,61 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IPChat API",
+    "description": "API for IPChat application",
+    "license": { "name": "MIT", "identifier": "MIT" },
+    "version": "0.0.0"
+  },
+  "paths": {
+    "api/v0/node": {
+      "get": {
+        "tags": ["node"],
+        "operationId": "nodeInfo",
+        "responses": {
+          "200": { "description": "Info retrieved successfully" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "api/v0/user": {
+      "get": {
+        "tags": ["user"],
+        "operationId": "userRegister",
+        "responses": {
+          "201": { "description": "User registered successfully" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NodeObject": {
+        "type": "object",
+        "required": ["installPath", "clientIp", "localIp", "webSocketAddr"],
+        "properties": {
+          "clientIp": {
+            "type": "string",
+            "description": "Client's IP Address"
+          },
+          "installPath": {
+            "type": "string",
+            "description": "Installation path of the node"
+          },
+          "localIp": {
+            "type": "string",
+            "description": "Node's Local IP Address"
+          },
+          "webSocketAddr": {
+            "type": "string",
+            "description": "WebSocket Address"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "node", "description": "Node Management" },
+    { "name": "user", "description": "User Management" }
+  ]
+}

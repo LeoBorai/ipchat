@@ -1,0 +1,218 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use anyhow::{Error, Result, bail};
+use futures::stream::SplitSink;
+use futures::{SinkExt, StreamExt};
+use gloo_net::websocket::Message;
+use gloo_net::websocket::futures::WebSocket;
+use gloo_timers::future::TimeoutFuture;
+use leptos::logging::{error, log};
+use serde::Serialize;
+use uuid::Uuid;
+
+use ipchat::proto::{ClientMessage, ServerMessage};
+
+thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: Rc<RefCell<ChatWebSocketService>> = Rc::new(RefCell::new(ChatWebSocketService::default())));
+
+const RECONNECT_DELAY_MS: Duration = Duration::from_millis(3000);
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ConnectionStatus {
+    Disconnected,
+    Connecting,
+    Connected,
+    Error,
+    Reconnecting,
+    ConnectionFailed,
+}
+
+impl std::fmt::Display for ConnectionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectionStatus::Disconnected => write!(f, "Disconnected"),
+            ConnectionStatus::Connecting => write!(f, "Connecting..."),
+            ConnectionStatus::Connected => write!(f, "Connected"),
+            ConnectionStatus::Error => write!(f, "Error"),
+            ConnectionStatus::Reconnecting => write!(f, "Reconnecting..."),
+            ConnectionStatus::ConnectionFailed => write!(f, "Connection Failed"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ChatWebSocketService {
+    id: Uuid,
+    ws: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
+    server_url: Option<String>,
+    is_connected: bool,
+    reconnect_delay: Duration,
+    should_reconnect: bool,
+}
+
+impl std::fmt::Debug for ChatWebSocketService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChatWebSocketService")
+            .field("id", &self.id.to_string())
+            .field("server_url", &self.server_url)
+            .field("is_connected", &self.is_connected)
+            .field("reconnect_delay", &self.reconnect_delay)
+            .field("should_reconnect", &self.should_reconnect)
+            .finish()
+    }
+}
+
+impl Default for ChatWebSocketService {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            ws: None,
+            server_url: None,
+            is_connected: false,
+            reconnect_delay: RECONNECT_DELAY_MS,
+            should_reconnect: false,
+        }
+    }
+}
+
+impl ChatWebSocketService {
+    pub fn get() -> Rc<RefCell<ChatWebSocketService>> {
+        CHAT_WEB_SOCKET_SERVICE.with(Rc::clone)
+    }
+
+    pub fn set_server_url(&mut self, server_url: String) {
+        self.server_url = Some(server_url);
+    }
+
+    pub fn connect<F1, F2, F3>(
+        &mut self,
+        on_connection_change: F1,
+        on_message: F2,
+        on_initial_connect: F3,
+    ) -> Result<()>
+    where
+        F1: Fn(bool, ConnectionStatus) + Clone + 'static,
+        F2: Fn(ServerMessage) + Clone + 'static,
+        F3: Fn(&mut Self) + Clone + 'static,
+    {
+        self.should_reconnect = true;
+        self.create_connection(on_connection_change, on_message, on_initial_connect)
+    }
+
+    fn create_connection<F1, F2, F3>(
+        &mut self,
+        on_connection_change: F1,
+        on_message: F2,
+        on_initial_connect: F3,
+    ) -> Result<()>
+    where
+        F1: Fn(bool, ConnectionStatus) + Clone + 'static,
+        F2: Fn(ServerMessage) + Clone + 'static,
+        F3: Fn(&mut Self) + Clone + 'static,
+    {
+        let Some(server_url) = &self.server_url else {
+            bail!("Server URL is not set");
+        };
+
+        on_connection_change(false, ConnectionStatus::Connecting);
+
+        match WebSocket::open(server_url) {
+            Ok(ws) => {
+                let (ws, mut receiver) = ws.split();
+
+                self.ws = Some(Arc::new(Mutex::new(ws)));
+                self.is_connected = true;
+
+                let should_reconnect = self.should_reconnect;
+                let reconnect_delay = self.reconnect_delay;
+                let on_connection_change_clone = on_connection_change.clone();
+                let on_message_clone = on_message.clone();
+
+                on_connection_change(true, ConnectionStatus::Connected);
+                on_initial_connect(self);
+
+                leptos::task::spawn_local(async move {
+                    while let Some(msg) = receiver.next().await {
+                        match msg {
+                            Ok(Message::Text(text)) => {
+                                match serde_json::from_str::<ServerMessage>(&text) {
+                                    Ok(message) => {
+                                        on_message_clone(message);
+                                    }
+                                    Err(e) => {
+                                        error!("Failed to parse message: {:?}", e);
+                                    }
+                                }
+                            }
+                            Ok(Message::Bytes(_)) => {
+                                log!("Received binary message (not supported)");
+                            }
+                            Err(e) => {
+                                error!("WebSocket error: {:?}", e);
+                                on_connection_change_clone(false, ConnectionStatus::Error);
+                                break;
+                            }
+                        }
+                    }
+
+                    on_connection_change_clone(false, ConnectionStatus::Disconnected);
+
+                    if should_reconnect {
+                        on_connection_change_clone(false, ConnectionStatus::Reconnecting);
+                        TimeoutFuture::new(reconnect_delay.as_millis() as u32).await;
+                    }
+                });
+
+                Ok(())
+            }
+            Err(e) => {
+                on_connection_change(false, ConnectionStatus::ConnectionFailed);
+                bail!("Failed to connect: {:?}", e)
+            }
+        }
+    }
+
+    pub async fn send(&self, message: &impl Serialize) -> Result<()> {
+        if let Some(ws) = &self.ws {
+            let mut ws = ws.lock().map_err(|err| {
+                Error::msg(format!("Failed to acquire WebSocket lock: {:?}", err))
+            })?;
+            if let Ok(json) = serde_json::to_string(message)
+                && let Err(err) = ws.send(Message::Text(json)).await
+            {
+                bail!("Failed to send message. {:?}", err);
+            }
+
+            return Ok(());
+        }
+
+        bail!("WebSocket is not connected");
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.is_connected
+    }
+
+    pub async fn list_nodes(&self) -> Result<()> {
+        self.send(&ClientMessage::ListNodes).await
+    }
+
+    pub async fn list_rooms(&self) -> Result<()> {
+        self.send(&ClientMessage::ListRooms).await
+    }
+
+    pub async fn create_room(&self, name: String) -> Result<()> {
+        self.send(&ClientMessage::CreateRoom { name }).await
+    }
+
+    pub async fn send_message(&self, room_id: Uuid, content: String, sender: String) -> Result<()> {
+        self.send(&ClientMessage::SendMessage {
+            room_id,
+            sender,
+            content,
+        })
+        .await
+    }
+}
