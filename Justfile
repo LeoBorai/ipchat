@@ -8,32 +8,23 @@ default:
 build: build-client build-server
 	@echo "Build complete."
 
-# Builds the client (Force)
+# Builds the client
 build-client:
-	cd src/client && bun run build:f
+	cd ./src/ui && trunk build
 
 # Builds the server (Without optimizations)
 build-server:
 	cargo b
 
-# Run clippy and format the code
-clippy:
-	cargo clippy --workspace --fix --allow-dirty --allow-staged
-	cargo fmt --all
-
 # Starts the development container
 dev:
 	docker compose -f dev/docker-compose.dev.yml up --build --detach
 
-# Formats the codebase
+# Lint and format
 fmt:
 	cargo clippy --fix --workspace --allow-dirty --allow-staged
 	cargo fmt
 	leptosfmt ./src/ui
-
-# Generates the OpenAPI specification file
-gen-openapi:
-	curl http://localhost:4724/api-docs/openapi.json > ./src/client/assets/openapi.json
 
 # Builds the client for Release
 release-client:
