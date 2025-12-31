@@ -9,21 +9,8 @@ use crate::hooks::node::use_server_url;
 #[component]
 pub fn Chat() -> impl IntoView {
     let username = RwSignal::new(String::from("myuser"));
-    let is_sidebar_open = RwSignal::new(true);
     let is_connected = RwSignal::new(false);
     let discovered_peers = RwSignal::new(vec![]);
-    let open_sidebar = {
-        let is_sidebar_open = is_sidebar_open;
-        move || {
-            is_sidebar_open.set(true);
-        }
-    };
-    let close_sidebar = {
-        let is_sidebar_open = is_sidebar_open;
-        move || {
-            is_sidebar_open.set(false);
-        }
-    };
     let request_peer_list = || {
         // Implementation to request peer list
     };
@@ -41,17 +28,12 @@ pub fn Chat() -> impl IntoView {
     view! {
         <div class="flex h-screen bg-gray-100">
             <Sidebar
-                username={username.read_only()}
-                is_sidebar_open={is_sidebar_open.read_only()}
-                open_sidebar={open_sidebar}
-                close_sidebar={close_sidebar}
-                is_connected={is_connected.read_only()}
-                discovered_peers={discovered_peers.read_only()}
-                request_peer_list={request_peer_list}
+                username=username.read_only()
+                is_connected=is_connected.read_only()
+                discovered_peers=discovered_peers.read_only()
+                request_peer_list=request_peer_list
             />
-            <ChatArea
-                username={username.read_only()}
-            />
+            <ChatArea username=username.read_only() />
         </div>
     }
 }

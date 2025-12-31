@@ -43,9 +43,7 @@ where
                 <h1 class="text-2xl font-bold text-center mb-2 text-gray-800">
                     "Local Network Chat"
                 </h1>
-                <p class="text-center text-gray-600 mb-6 text-sm">
-                    "Connect to Rust P2P Server"
-                </p>
+                <p class="text-center text-gray-600 mb-6 text-sm">"Connect to Rust P2P Server"</p>
 
                 <div class="space-y-4">
                     <div>
@@ -70,11 +68,9 @@ where
                         />
                     </div>
 
-                    <button
-                        // on:click=handle_submit
-                        // disabled=is_disabled
-                        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
+                    <button // on:click=handle_submit
+                    // disabled=is_disabled
+                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
                         "Connect to Network"
                     </button>
                 </div>

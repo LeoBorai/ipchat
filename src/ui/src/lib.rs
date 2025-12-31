@@ -11,6 +11,7 @@ use leptos_router::{components::*, path};
 
 use crate::contexts::chat_websocket_context::ChatWebSocketContext;
 use crate::contexts::node_context::NodeContext;
+use crate::contexts::ui_context::UIContext;
 use crate::pages::home::Home;
 
 #[component]
@@ -18,6 +19,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     provide_context(NodeContext::default());
     provide_context(ChatWebSocketContext::default());
+    provide_context(UIContext::default());
 
     view! {
         <Html attr:lang="en" attr:dir="ltr" attr:data-theme="light" />

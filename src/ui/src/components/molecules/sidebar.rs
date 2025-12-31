@@ -6,23 +6,23 @@ use crate::hooks::chat_websocket::{
     use_active_room, use_chat_ws, use_connection_status, use_rooms,
 };
 use crate::hooks::node::use_server_url;
+use crate::hooks::ui::{use_is_sidebar_open, use_toggle_sidebar};
 
 #[component]
 pub fn Sidebar(
     #[prop(into)] username: Signal<String>,
-    #[prop(into)] is_sidebar_open: Signal<bool>,
     #[prop(into)] is_connected: Signal<bool>,
     #[prop(into)] discovered_peers: Signal<Vec<PeerRoom>>,
-    open_sidebar: impl Fn() + Clone + Send + Sync + 'static,
-    close_sidebar: impl Fn() + Clone + Send + Sync + 'static,
     request_peer_list: impl Fn() + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
-    let (new_room_name, set_new_room_name) = signal(String::new());
-    let (show_create_room, set_show_create_room) = signal(false);
     let server_url = use_server_url();
     let connection_status = use_connection_status();
     let rooms = use_rooms();
     let active_room = use_active_room();
+    let is_sidebar_open = use_is_sidebar_open();
+    let toggle_sidebar = use_toggle_sidebar();
+    let (new_room_name, set_new_room_name) = signal(String::new());
+    let (show_create_room, set_show_create_room) = signal(false);
 
     let handle_create_room = move || {
         let room_name = new_room_name.get();
@@ -35,18 +35,6 @@ pub fn Sidebar(
             });
             set_new_room_name.set(String::new());
             set_show_create_room.set(false);
-        }
-    };
-
-    let toggle_sidebar = {
-        let open = open_sidebar.clone();
-        let close = close_sidebar.clone();
-        move || {
-            if is_sidebar_open.get() {
-                close();
-            } else {
-                open();
-            }
         }
     };
 
@@ -82,12 +70,15 @@ pub fn Sidebar(
                     <path d="M9 3v18"></path>
                 </svg>
             </button>
-            <div id="sidebar" class=move || {
-                format!(
-                    "w-80 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 {} fixed md:relative h-full z-40",
-                    if is_sidebar_open.get() { "translate-x-0" } else { "-translate-x-full" },
-                )
-            }>
+            <div
+                id="sidebar"
+                class=move || {
+                    format!(
+                        "w-80 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 {} fixed md:relative h-full z-40",
+                        if is_sidebar_open.get() { "translate-x-0" } else { "-translate-x-full" },
+                    )
+                }
+            >
                 <div id="user-info" class="p-4 border-b border-gray-200 bg-indigo-50">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-3">
@@ -145,7 +136,9 @@ pub fn Sidebar(
                             )
                         }></div>
 
-                        <p class="text-xs text-gray-600">{move || format!("{}", connection_status.get()) }</p>
+                        <p class="text-xs text-gray-600">
+                            {move || format!("{}", connection_status.get())}
+                        </p>
                     </div>
                 </div>
                 <div id="rooms" class="flex-1 overflow-y-auto">
@@ -200,22 +193,20 @@ pub fn Sidebar(
                                         chat_ws_ctx.set_active_room(Some(room));
                                     }
                                 };
-
                                 move |room: Room| {
-                                let room_clone = room.clone();
-                                let active = active_room.get();
-                                let is_active = active
-                                    .as_ref()
-                                    .map(|r| r.id == room.id)
-                                    .unwrap_or(false);
+                                    let room_clone = room.clone();
+                                    let active = active_room.get();
+                                    let is_active = active
+                                        .as_ref()
+                                        .map(|r| r.id == room.id)
+                                        .unwrap_or(false);
+
                                     view! {
                                         <button
                                             on:click={
                                                 let room = room_clone.clone();
                                                 let set_active_room = set_active_room.clone();
-                                                move |_| {
-                                                    set_active_room(room.clone())
-                                                }
+                                                move |_| { set_active_room(room.clone()) }
                                             }
                                             class=format!(
                                                 "cursor-pointer w-full text-left p-3 rounded-lg mb-2 transition {}",
@@ -234,8 +225,8 @@ pub fn Sidebar(
                                     }
                                 }
                             }
-
                         />
+
                         <Show when=move || show_create_room.get()>
                             <div class="mb-3 flex gap-2">
                                 <input
@@ -271,7 +262,7 @@ pub fn Sidebar(
                         </Show>
                     </div>
 
-                    {/* Discovered Peers */}
+                    {}
                     <div class="p-4 border-t border-gray-200">
                         <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                             <svg
@@ -337,29 +328,7 @@ pub fn Sidebar(
                 </div>
             </div>
 
-            {/* Overlay for mobile */}
-            // {move || {
-            //     is_sidebar_open
-            //         .get()
-            //         .then(|| {
-            //             view! {
-            //                 <div
-            //                     role="button"
-            //                     tabindex="0"
-            //                     aria-label="Close sidebar overlay"
-            //                     class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-            //                     on:click=move |_| close_sidebar()
-            //                     on:keydown=move |ev| {
-            //                         if ev.key() == "Escape" {
-            //                             close_sidebar();
-            //                         }
-            //                     }
-            //                 >
-            //                 </div>
-            //             }
-            //         })
-            // }}
-
+            {}
         </>
     }
 }
