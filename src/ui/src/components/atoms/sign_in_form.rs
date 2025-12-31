@@ -47,10 +47,8 @@ pub fn SignInForm() -> impl IntoView {
                         </svg>
                     </div>
                 </div>
-                <h1 class="text-2xl font-bold text-center mb-2 text-gray-800">
-                    "Local Network Chat"
-                </h1>
-                <p class="text-center text-gray-600 mb-6 text-sm">"Connect to Rust P2P Server"</p>
+                <h1 class="text-2xl font-bold text-center mb-2 text-gray-800">"IPChat"</h1>
+                <p class="text-center text-gray-600 mb-6 text-sm">"Local Network Private Chat"</p>
                 <form class="space-y-4" on:submit=handle_submit>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">

@@ -18,13 +18,18 @@ pub fn ChatArea() -> impl IntoView {
     let username = use_username();
     let handle_send_message = move || {
         let message_text = new_message.get();
+        let username = username.get();
         if !message_text.trim().is_empty()
             && let Some(room) = active_room.get()
+            && let Some(username) = username
         {
             let chat_ws_ctx = use_chat_ws();
 
             leptos::task::spawn_local(async move {
-                if let Err(err) = chat_ws_ctx.send_message(room.id, message_text).await {
+                if let Err(err) = chat_ws_ctx
+                    .send_message(room.id, message_text, username)
+                    .await
+                {
                     error!("Failed to send message. {:#?}", err);
                 }
                 set_new_message.set(String::new());

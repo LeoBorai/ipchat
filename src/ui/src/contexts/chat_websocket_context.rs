@@ -5,12 +5,11 @@ use chrono::Utc;
 use gloo_timers::callback::Interval;
 use gloo_timers::future::TimeoutFuture;
 use leptos::logging::error;
-use leptos::prelude::{GetUntracked, RwSignal, Set, Update};
+use leptos::prelude::{RwSignal, Set, Update};
 use uuid::Uuid;
 
 use ipchat::proto::{ChatMessage, NodeInfo, Room, ServerMessage};
 
-use crate::hooks::session::use_username;
 use crate::services::chat_websocket_service::{ChatWebSocketService, ConnectionStatus};
 
 #[derive(Clone, Debug)]
@@ -183,11 +182,13 @@ impl ChatWebSocketContext {
             .await
     }
 
-    pub async fn send_message(&self, room_id: Uuid, content: String) -> Result<()> {
+    pub async fn send_message(
+        &self,
+        room_id: Uuid,
+        content: String,
+        username: String,
+    ) -> Result<()> {
         let chat_web_socket_service = ChatWebSocketService::get();
-        let Some(username) = use_username().get_untracked() else {
-            return Err(anyhow::anyhow!("Username not set in session"));
-        };
         chat_web_socket_service
             .borrow()
             .send_message(room_id, content, username)

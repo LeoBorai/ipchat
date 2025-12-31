@@ -19,9 +19,9 @@ use crate::pages::signin::SignIn;
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+    provide_context(SessionContext::default());
     provide_context(NodeContext::default());
     provide_context(ChatWebSocketContext::default());
-    provide_context(SessionContext::default());
     provide_context(UIContext::default());
 
     view! {
