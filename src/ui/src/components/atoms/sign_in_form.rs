@@ -69,8 +69,8 @@ where
                     </div>
 
                     // on:click=handle_submit
-                    <button // disabled=is_disabled
-                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    // disabled=is_disabled
+                    <button class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
                         "Connect to Network"
                     </button>
                 </div>
