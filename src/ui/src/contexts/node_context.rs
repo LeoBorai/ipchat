@@ -1,6 +1,5 @@
 use anyhow::Result;
 use leptos::logging::error;
-use leptos::logging::log;
 use leptos::prelude::{RwSignal, Set};
 
 use ipchat_client::{ApiClient, NodeObject};
@@ -40,7 +39,6 @@ impl Default for NodeContext {
 
 impl NodeContext {
     async fn fetch_node_info(&self) -> Result<()> {
-        log!("{}", host()?);
         let ipchat = ApiClient::new(host()?);
 
         match ipchat.node_info().await {

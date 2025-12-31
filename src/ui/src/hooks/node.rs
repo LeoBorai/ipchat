@@ -9,7 +9,3 @@ pub fn use_node() -> NodeContext {
 pub fn use_server_url() -> Signal<Option<String>> {
     Signal::derive(move || use_node().server_url.get())
 }
-
-pub fn use_is_loading() -> Signal<bool> {
-    Signal::derive(move || use_node().is_loading.get())
-}

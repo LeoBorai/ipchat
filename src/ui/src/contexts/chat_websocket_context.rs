@@ -4,11 +4,11 @@ use anyhow::Result;
 use chrono::Utc;
 use gloo_timers::callback::Interval;
 use gloo_timers::future::TimeoutFuture;
-use leptos::logging::{error, log};
+use leptos::logging::error;
 use leptos::prelude::{RwSignal, Set, Update};
 use uuid::Uuid;
 
-use ipchat::proto::{ChatMessage, PeerRoom, Room, ServerMessage};
+use ipchat::proto::{ChatMessage, NodeInfo, Room, ServerMessage};
 
 use crate::services::chat_websocket_service::{ChatWebSocketService, ConnectionStatus};
 
@@ -17,10 +17,9 @@ pub struct ChatWebSocketContext {
     pub is_connected: RwSignal<bool>,
     pub connection_status: RwSignal<ConnectionStatus>,
     pub rooms: RwSignal<Vec<Room>>,
-    pub discovered_peers: RwSignal<Vec<PeerRoom>>,
     pub active_room: RwSignal<Option<Room>>,
     pub messages: RwSignal<HashMap<Uuid, Vec<ChatMessage>>>,
-    // peer_list_interval: StoredValue<Option<Interval>>,
+    pub nodes: RwSignal<Vec<NodeInfo>>,
 }
 
 impl Default for ChatWebSocketContext {
@@ -29,10 +28,9 @@ impl Default for ChatWebSocketContext {
             is_connected: RwSignal::new(false),
             connection_status: RwSignal::new(ConnectionStatus::Disconnected),
             rooms: RwSignal::new(Vec::new()),
-            discovered_peers: RwSignal::new(Vec::new()),
             active_room: RwSignal::new(None),
             messages: RwSignal::new(HashMap::new()),
-            // peer_list_interval: StoredValue::new(None),
+            nodes: RwSignal::new(Vec::new()),
         }
     }
 }
@@ -79,8 +77,17 @@ impl ChatWebSocketContext {
             ServerMessage::Error { message } => {
                 error!("Server error: {}", message);
             }
-            _ => {
-                log!("Unhandled server message: {:?}", message);
+            ServerMessage::RoomLeft { room_id } => {
+                self.active_room.update(|active_room| {
+                    if let Some(room) = active_room
+                        && room.id == room_id
+                    {
+                        *active_room = None;
+                    }
+                });
+            }
+            ServerMessage::NodeList { nodes } => {
+                self.nodes.set(nodes);
             }
         }
     }
@@ -107,8 +114,13 @@ impl ChatWebSocketContext {
                 move |ws_service| {
                     let ws_service = ws_service.clone();
                     leptos::task::spawn_local(async move {
-                        ws_service.list_nodes().await;
-                        ws_service.list_rooms().await;
+                        if let Err(err) = ws_service.list_nodes().await {
+                            error!("Failed to request peer list on connect. {}", err);
+                        }
+
+                        if let Err(err) = ws_service.list_rooms().await {
+                            error!("Failed to request room list on connect. {}", err);
+                        }
                     });
                 }
             },

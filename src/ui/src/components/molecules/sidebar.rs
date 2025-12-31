@@ -1,25 +1,23 @@
 use leptos::prelude::*;
 
-use ipchat::proto::{PeerRoom, Room};
+use ipchat::proto::Room;
 
 use crate::hooks::chat_websocket::{
-    use_active_room, use_chat_ws, use_connection_status, use_rooms,
+    use_active_room, use_chat_ws, use_connection_status, use_is_connected, use_nodes, use_rooms,
 };
 use crate::hooks::node::use_server_url;
 use crate::hooks::ui::{use_is_sidebar_open, use_toggle_sidebar};
 
 #[component]
-pub fn Sidebar(
-    #[prop(into)] username: Signal<String>,
-    #[prop(into)] is_connected: Signal<bool>,
-    #[prop(into)] discovered_peers: Signal<Vec<PeerRoom>>,
-) -> impl IntoView {
+pub fn Sidebar(#[prop(into)] username: Signal<String>) -> impl IntoView {
     let server_url = use_server_url();
     let connection_status = use_connection_status();
     let rooms = use_rooms();
+    let nodes = use_nodes();
     let active_room = use_active_room();
     let is_sidebar_open = use_is_sidebar_open();
     let toggle_sidebar = use_toggle_sidebar();
+    let is_connected = use_is_connected();
     let (new_room_name, set_new_room_name) = signal(String::new());
     let (show_create_room, set_show_create_room) = signal(false);
 
@@ -260,8 +258,6 @@ pub fn Sidebar(
                             </div>
                         </Show>
                     </div>
-
-                    {}
                     <div class="p-4 border-t border-gray-200">
                         <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                             <svg
@@ -282,39 +278,35 @@ pub fn Sidebar(
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
                             {move || {
-                                format!("Network Peers ({})", discovered_peers.get().len())
+                                format!("Nodes ({})", nodes.get().len())
                             }}
-
                         </h3>
                         {move || {
-                            let peers = discovered_peers.get();
-                            if peers.is_empty() {
+                            let nodes = nodes.get();
+                            if nodes.is_empty() {
                                 view! {
                                     <p class="text-sm text-gray-500">
                                         {if is_connected.get() {
-                                            "No peers discovered yet..."
+                                            "No nodes discovered yet..."
                                         } else {
-                                            "Connect to see peers"
+                                            "Connect to see nodes"
                                         }}
 
                                     </p>
                                 }
                                     .into_any()
                             } else {
-                                peers
+                                nodes
                                     .into_iter()
-                                    .map(|peer| {
+                                    .map(|node| {
                                         view! {
                                             <div class="mb-4 p-3 bg-gray-50 rounded-lg">
                                                 <div class="flex items-center gap-2 mb-2">
                                                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                                                     <p class="font-medium text-sm text-gray-800">
-                                                        {peer.name.clone()}
+                                                        {node.ip.to_string()}
                                                     </p>
                                                 </div>
-                                                <p class="text-xs text-gray-500 font-mono mb-2">
-                                                    {peer.ip}
-                                                </p>
                                             </div>
                                         }
                                     })
@@ -322,12 +314,9 @@ pub fn Sidebar(
                                     .into_any()
                             }
                         }}
-
                     </div>
                 </div>
             </div>
-
-            {}
         </>
     }
 }

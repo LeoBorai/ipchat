@@ -1,7 +1,7 @@
 use leptos::prelude::{Get, Signal, expect_context};
 use uuid::Uuid;
 
-use ipchat::proto::{ChatMessage, PeerRoom, Room};
+use ipchat::proto::{ChatMessage, NodeInfo, Room};
 
 use crate::contexts::chat_websocket_context::ChatWebSocketContext;
 use crate::services::chat_websocket_service::ConnectionStatus;
@@ -22,8 +22,8 @@ pub fn use_rooms() -> Signal<Vec<Room>> {
     Signal::derive(move || use_chat_ws().rooms.get())
 }
 
-pub fn use_discovered_peers() -> Signal<Vec<PeerRoom>> {
-    Signal::derive(move || use_chat_ws().discovered_peers.get())
+pub fn use_nodes() -> Signal<Vec<NodeInfo>> {
+    Signal::derive(move || use_chat_ws().nodes.get())
 }
 
 pub fn use_active_room() -> Signal<Option<Room>> {
