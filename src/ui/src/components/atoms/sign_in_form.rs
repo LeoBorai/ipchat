@@ -1,20 +1,27 @@
 use leptos::prelude::*;
+use web_sys::SubmitEvent;
+
+use crate::hooks::session::use_session;
 
 #[component]
-pub fn SignInForm<F>(on_submit: F) -> impl IntoView
-where
-    F: Fn(String) + 'static,
-{
+pub fn SignInForm() -> impl IntoView {
     let (username, set_username) = signal(String::new());
+    let handle_submit = {
+        let session_ctx = use_session();
+        let username = username;
 
-    let handle_submit = move |_| {
-        let username_value = username.get();
-        if !username_value.trim().is_empty() {
-            on_submit(username_value);
+        move |ev: SubmitEvent| {
+            ev.prevent_default();
+
+            let username_value = username.get();
+
+            if !username_value.trim().is_empty() {
+                session_ctx.set_username(Some(username_value));
+            }
         }
     };
 
-    let _is_disabled = move || username.get().trim().is_empty();
+    let is_disabled = move || username.get().trim().is_empty();
 
     view! {
         <div class="flex items-center justify-center min-h-screen from-blue-50 to-indigo-100">
@@ -44,8 +51,7 @@ where
                     "Local Network Chat"
                 </h1>
                 <p class="text-center text-gray-600 mb-6 text-sm">"Connect to Rust P2P Server"</p>
-
-                <div class="space-y-4">
+                <form class="space-y-4" on:submit=handle_submit>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             "Username"
@@ -57,23 +63,17 @@ where
                             on:input=move |ev| {
                                 set_username.set(event_target_value(&ev));
                             }
-
-                            on:keypress=move |ev| {
-                                if ev.key() == "Enter" && !username.get().trim().is_empty() {
-                                    handle_submit(ev);
-                                }
-                            }
-
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
-
-                    // on:click=handle_submit
-                    // disabled=is_disabled
-                    <button class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
-                        "Connect to Network"
+                    <button
+                        type="submit"
+                        disabled=is_disabled
+                        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        "Sign In"
                     </button>
-                </div>
+                </form>
             </div>
         </div>
     }
