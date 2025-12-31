@@ -13,9 +13,11 @@ use leptos::logging::{error, log};
 use serde::Serialize;
 use uuid::Uuid;
 
+use ipchat::proto::{ClientMessage, ServerMessage};
+
 thread_local!(pub static CHAT_WEB_SOCKET_SERVICE: Rc<RefCell<ChatWebSocketService>> = Rc::new(RefCell::new(ChatWebSocketService::default())));
 
-use ipchat::proto::ServerMessage;
+const RECONNECT_DELAY_MS: Duration = Duration::from_millis(3000);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ConnectionStatus {
@@ -69,7 +71,7 @@ impl Default for ChatWebSocketService {
             ws: None,
             server_url: None,
             is_connected: false,
-            reconnect_delay: Duration::from_millis(3000),
+            reconnect_delay: RECONNECT_DELAY_MS,
             should_reconnect: false,
         }
     }
@@ -82,14 +84,6 @@ impl ChatWebSocketService {
 
     pub fn set_server_url(&mut self, server_url: String) {
         self.server_url = Some(server_url);
-    }
-
-    pub fn set_reconnect_delay(&mut self, delay: Duration) {
-        self.reconnect_delay = delay;
-    }
-
-    pub fn set_should_reconnect(&mut self, should_reconnect: bool) {
-        self.should_reconnect = should_reconnect;
     }
 
     pub fn connect<F1, F2, F3>(
@@ -163,8 +157,6 @@ impl ChatWebSocketService {
                         }
                     }
 
-                    // Connection closed
-                    log!("Disconnected from server");
                     on_connection_change_clone(false, ConnectionStatus::Disconnected);
 
                     if should_reconnect {
@@ -180,12 +172,6 @@ impl ChatWebSocketService {
                 bail!("Failed to connect: {:?}", e)
             }
         }
-    }
-
-    pub fn disconnect(&mut self) {
-        self.ws = None;
-        self.should_reconnect = false;
-        self.is_connected = false;
     }
 
     pub async fn send(&self, message: &impl Serialize) -> Result<()> {
@@ -209,69 +195,23 @@ impl ChatWebSocketService {
         self.is_connected
     }
 
-    pub async fn list_nodes(&self) {
-        #[derive(Serialize)]
-        struct ListNodesMessage {
-            r#type: String,
-        }
-        self.send(&ListNodesMessage {
-            r#type: "ListNodes".to_string(),
-        })
-        .await;
+    pub async fn list_nodes(&self) -> Result<()> {
+        self.send(&ClientMessage::ListNodes).await
     }
 
-    pub async fn list_rooms(&self) {
-        #[derive(Serialize)]
-        struct ListRoomsMessage {
-            r#type: String,
-        }
-        self.send(&ListRoomsMessage {
-            r#type: "ListRooms".to_string(),
-        })
-        .await;
+    pub async fn list_rooms(&self) -> Result<()> {
+        self.send(&ClientMessage::ListRooms).await
     }
 
     pub async fn create_room(&self, name: String) -> Result<()> {
-        #[derive(Serialize)]
-        struct CreateRoomMessage {
-            r#type: String,
-            name: String,
-        }
-        self.send(&CreateRoomMessage {
-            r#type: "CreateRoom".to_string(),
-            name,
-        })
-        .await
-    }
-
-    pub async fn join_room(&self, room_id: String, peer_ip: String) {
-        #[derive(Serialize)]
-        struct JoinRoomMessage {
-            r#type: String,
-            room_id: String,
-            peer_ip: String,
-        }
-        self.send(&JoinRoomMessage {
-            r#type: "JoinRoom".to_string(),
-            room_id,
-            peer_ip,
-        })
-        .await;
+        self.send(&ClientMessage::CreateRoom { name }).await
     }
 
     pub async fn send_message(&self, room_id: Uuid, content: String, sender: String) -> Result<()> {
-        #[derive(Serialize)]
-        struct SendMessageMessage {
-            r#type: String,
-            room_id: Uuid,
-            content: String,
-            sender: String,
-        }
-        self.send(&SendMessageMessage {
-            r#type: "SendMessage".to_string(),
+        self.send(&ClientMessage::SendMessage {
             room_id,
-            content,
             sender,
+            content,
         })
         .await
     }
