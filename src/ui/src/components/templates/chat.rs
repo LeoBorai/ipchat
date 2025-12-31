@@ -11,9 +11,6 @@ pub fn Chat() -> impl IntoView {
     let username = RwSignal::new(String::from("myuser"));
     let is_connected = RwSignal::new(false);
     let discovered_peers = RwSignal::new(vec![]);
-    let request_peer_list = || {
-        // Implementation to request peer list
-    };
 
     Effect::new(move || {
         let Some(server_url) = use_server_url().get() else {
@@ -31,7 +28,6 @@ pub fn Chat() -> impl IntoView {
                 username=username.read_only()
                 is_connected=is_connected.read_only()
                 discovered_peers=discovered_peers.read_only()
-                request_peer_list=request_peer_list
             />
             <ChatArea username=username.read_only() />
         </div>

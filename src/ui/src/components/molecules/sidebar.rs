@@ -13,7 +13,6 @@ pub fn Sidebar(
     #[prop(into)] username: Signal<String>,
     #[prop(into)] is_connected: Signal<bool>,
     #[prop(into)] discovered_peers: Signal<Vec<PeerRoom>>,
-    request_peer_list: impl Fn() + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let server_url = use_server_url();
     let connection_status = use_connection_status();
@@ -105,7 +104,7 @@ pub fn Sidebar(
                             </div>
                         </div>
                         <button
-                            on:click=move |_| request_peer_list()
+                            // on:click=move |_| request_peer_list()
                             class="p-2 hover:bg-indigo-100 rounded-full transition"
                             title="Refresh peers"
                         >
