@@ -5,11 +5,12 @@ use chrono::Utc;
 use gloo_timers::callback::Interval;
 use gloo_timers::future::TimeoutFuture;
 use leptos::logging::error;
-use leptos::prelude::{RwSignal, Set, Update};
+use leptos::prelude::{GetUntracked, RwSignal, Set, Update};
 use uuid::Uuid;
 
 use ipchat::proto::{ChatMessage, NodeInfo, Room, ServerMessage};
 
+use crate::hooks::session::use_username;
 use crate::services::chat_websocket_service::{ChatWebSocketService, ConnectionStatus};
 
 #[derive(Clone, Debug)]
@@ -142,7 +143,9 @@ impl ChatWebSocketContext {
                     let interval = Interval::new(1000, move || {
                         let ws_service = ChatWebSocketService::get();
                         leptos::task::spawn_local(async move {
-                            ws_service.borrow_mut().list_nodes().await;
+                            if let Err(err) = ws_service.borrow_mut().list_nodes().await {
+                                error!("Failed to request peer list on interval. {}", err);
+                            }
                         });
                     });
 
@@ -172,18 +175,6 @@ impl ChatWebSocketContext {
         self.active_room.set(room);
     }
 
-    pub fn request_peer_list(&self) {
-        // if let Some(service) = self.ws_service.get_value() {
-        //     service.list_nodes();
-        // }
-    }
-
-    pub fn request_room_list(&self) {
-        // if let Some(service) = self.ws_service.get_value() {
-        //     service.list_rooms();
-        // }
-    }
-
     pub async fn create_room(&self, room_name: String) -> Result<()> {
         let chat_web_socket_service = ChatWebSocketService::get();
         chat_web_socket_service
@@ -192,17 +183,14 @@ impl ChatWebSocketContext {
             .await
     }
 
-    pub fn join_room(&self, _room_id: String, _peer_ip: String) {
-        // if let Some(service) = self.ws_service.get_value() {
-        //     service.join_room(room_id, peer_ip);
-        // }
-    }
-
-    pub async fn send_message(&self, room_id: Uuid, content: String, sender: String) -> Result<()> {
+    pub async fn send_message(&self, room_id: Uuid, content: String) -> Result<()> {
         let chat_web_socket_service = ChatWebSocketService::get();
+        let Some(username) = use_username().get_untracked() else {
+            return Err(anyhow::anyhow!("Username not set in session"));
+        };
         chat_web_socket_service
             .borrow()
-            .send_message(room_id, content, sender)
+            .send_message(room_id, content, username)
             .await
     }
 }

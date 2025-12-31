@@ -4,26 +4,27 @@ use leptos::prelude::*;
 
 use ipchat::proto::ChatMessage;
 
-use crate::hooks::chat_websocket::{use_active_room, use_chat_ws, use_is_connected, use_messages};
+use crate::hooks::{
+    chat_websocket::{use_active_room, use_chat_ws, use_is_connected, use_messages},
+    session::use_username,
+};
 
 #[component]
-pub fn ChatArea(#[prop(into)] username: Signal<String>) -> impl IntoView {
+pub fn ChatArea() -> impl IntoView {
     let (new_message, set_new_message) = signal(String::new());
-    let username_clone = username;
     let messages = use_messages();
     let is_connected = use_is_connected();
     let active_room = use_active_room();
+    let username = use_username();
     let handle_send_message = move || {
         let message_text = new_message.get();
         if !message_text.trim().is_empty()
             && let Some(room) = active_room.get()
         {
             let chat_ws_ctx = use_chat_ws();
+
             leptos::task::spawn_local(async move {
-                if let Err(err) = chat_ws_ctx
-                    .send_message(room.id, message_text, username.get_untracked())
-                    .await
-                {
+                if let Err(err) = chat_ws_ctx.send_message(room.id, message_text).await {
                     error!("Failed to send message. {:#?}", err);
                 }
                 set_new_message.set(String::new());
@@ -94,7 +95,8 @@ pub fn ChatArea(#[prop(into)] username: Signal<String>) -> impl IntoView {
                         each=move || get_room_messages()
                         key=|msg| msg.timestamp
                         children=move |msg| {
-                            let is_own = msg.sender == username_clone.get_untracked();
+                            let is_own = msg.sender
+                                == username.get().unwrap_or(String::from("Anonymous"));
                             let is_system = msg.sender == "System";
                             view! {
                                 <div class=format!(

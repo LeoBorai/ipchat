@@ -6,10 +6,11 @@ use crate::hooks::chat_websocket::{
     use_active_room, use_chat_ws, use_connection_status, use_is_connected, use_nodes, use_rooms,
 };
 use crate::hooks::node::use_server_url;
+use crate::hooks::session::use_username;
 use crate::hooks::ui::{use_is_sidebar_open, use_toggle_sidebar};
 
 #[component]
-pub fn Sidebar(#[prop(into)] username: Signal<String>) -> impl IntoView {
+pub fn Sidebar() -> impl IntoView {
     let server_url = use_server_url();
     let connection_status = use_connection_status();
     let rooms = use_rooms();
@@ -18,6 +19,7 @@ pub fn Sidebar(#[prop(into)] username: Signal<String>) -> impl IntoView {
     let is_sidebar_open = use_is_sidebar_open();
     let toggle_sidebar = use_toggle_sidebar();
     let is_connected = use_is_connected();
+    let username = use_username();
     let (new_room_name, set_new_room_name) = signal(String::new());
     let (show_create_room, set_show_create_room) = signal(false);
 

@@ -8,8 +8,6 @@ use crate::hooks::node::use_server_url;
 
 #[component]
 pub fn Chat() -> impl IntoView {
-    let username = RwSignal::new(String::from("myuser"));
-
     Effect::new(move || {
         let Some(server_url) = use_server_url().get() else {
             return;
@@ -22,8 +20,8 @@ pub fn Chat() -> impl IntoView {
 
     view! {
         <div class="flex h-screen bg-gray-100">
-            <Sidebar username=username.read_only() />
-            <ChatArea username=username.read_only() />
+            <Sidebar />
+            <ChatArea />
         </div>
     }
 }
