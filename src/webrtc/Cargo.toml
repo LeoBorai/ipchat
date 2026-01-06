@@ -14,7 +14,7 @@ panic = "abort"
 
 [dependencies]
 futures-util = { workspace = true }
-getrandom = { workspace = true }
+getrandom = { workspace = true, features = ["wasm_js"] }
 js-sys = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
