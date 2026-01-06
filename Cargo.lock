@@ -1453,14 +1453,36 @@ dependencies = [
  "gloo-timers",
  "ipchat",
  "ipchat-client",
+ "ipchat-webrtc",
+ "js-sys",
  "leptos",
  "leptos_meta",
  "leptos_router",
  "log",
  "serde",
+ "serde-wasm-bindgen",
  "serde_json",
  "uuid",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
+ "web-sys",
+]
+
+[[package]]
+name = "ipchat-webrtc"
+version = "0.0.0"
+dependencies = [
+ "futures-util",
+ "getrandom 0.3.4",
+ "js-sys",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "web-sys",
 ]

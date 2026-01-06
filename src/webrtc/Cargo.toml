@@ -1,0 +1,46 @@
+[package]
+name = "ipchat-webrtc"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[dependencies]
+futures-util = { workspace = true }
+getrandom = { workspace = true }
+js-sys = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde-wasm-bindgen = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true, features = ["v4", "js", "serde"] }
+wasm-bindgen = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+
+[dependencies.web-sys]
+workspace = true
+features = [
+    "RtcConfiguration",
+    "RtcDataChannel",
+    "RtcDataChannelEvent",
+    "RtcIceCandidate",
+    "RtcIceCandidateInit",
+    "RtcIceConnectionState",
+    "RtcIceServer",
+    "RtcPeerConnection",
+    "RtcPeerConnectionIceEvent",
+    "RtcSdpType",
+    "RtcSessionDescriptionInit",
+    "WebSocket",
+    "Window",
+]
+
+[dev-dependencies]
+wasm-bindgen-test = { workspace = true }
